@@ -71,6 +71,12 @@ const STATUS_CONFIG: Record<
     progressColor: "secondary",
     spin: true,
   },
+  uploading: {
+    icon: Loader2Icon,
+    color: "text-primary",
+    progressColor: "primary",
+    spin: true,
+  },
   completed: {
     icon: CheckCircleIcon,
     color: "text-success",

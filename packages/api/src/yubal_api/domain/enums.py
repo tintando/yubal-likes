@@ -8,6 +8,7 @@ class JobStatus(StrEnum):
     FETCHING_INFO = "fetching_info"  # Extracting content metadata
     DOWNLOADING = "downloading"  # Downloading tracks (0-80%)
     IMPORTING = "importing"  # Beets import (80-100%)
+    UPLOADING = "uploading"  # Google Drive upload
     COMPLETED = "completed"
     FAILED = "failed"
     CANCELLED = "cancelled"
@@ -16,6 +17,10 @@ class JobStatus(StrEnum):
     def is_finished(self) -> bool:
         return self in (self.COMPLETED, self.FAILED, self.CANCELLED)
 
+    @property
+    def is_active(self) -> bool:
+        return not self.is_finished
+
 
 class ProgressStep(StrEnum):
     """Steps in the sync workflow. Values match JobStatus."""
@@ -23,6 +28,7 @@ class ProgressStep(StrEnum):
     FETCHING_INFO = "fetching_info"
     DOWNLOADING = "downloading"
     IMPORTING = "importing"
+    UPLOADING = "uploading"
     COMPLETED = "completed"
     FAILED = "failed"
 

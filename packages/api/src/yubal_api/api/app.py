@@ -30,6 +30,7 @@ from yubal_api.api.container import Services
 from yubal_api.api.exceptions import register_exception_handlers
 from yubal_api.api.routes import (
     cookies,
+    drive,
     health,
     info,
     jobs,
@@ -49,6 +50,7 @@ from yubal_api.schemas.logs import LogEntry
 from yubal_api.services.job_event_bus import JobEventBus
 from yubal_api.services.job_executor import JobExecutor
 from yubal_api.services.job_store import JobStore
+from yubal_api.services.gdrive_service import GDriveService
 from yubal_api.services.log_buffer import BufferHandler, LogBuffer
 from yubal_api.services.playlist_info_service import PlaylistInfoService
 from yubal_api.services.scheduler import Scheduler
@@ -159,6 +161,15 @@ def create_services(repository: SubscriptionRepository) -> Services:
         playlist_info=playlist_info,
     )
 
+    # Create Google Drive service if authorized
+    gdrive_service: GDriveService | None = None
+    if settings.gdrive_authorized:
+        gdrive_service = GDriveService(
+            token_file=settings.gdrive_token_file,
+            root_folder_id=settings.gdrive_folder_id,
+        )
+        logger.info("Google Drive sync enabled (folder: %s)", settings.gdrive_folder_id)
+
     job_executor = JobExecutor(
         job_store=job_store,
         base_path=settings.data,
@@ -172,6 +183,7 @@ def create_services(repository: SubscriptionRepository) -> Services:
         subscription_service=subscription_service,
         cache_path=settings.cache_path,
         job_timeout=settings.job_timeout_seconds,
+        gdrive_service=gdrive_service,
     )
 
     # Create scheduler
@@ -192,6 +204,7 @@ def create_services(repository: SubscriptionRepository) -> Services:
         scheduler=scheduler_service,
         job_event_bus=job_event_bus,
         log_buffer=log_buffer,
+        gdrive_service=gdrive_service,
     )
 
 
@@ -203,6 +216,7 @@ def create_api_router() -> APIRouter:
     api_router.include_router(jobs.router)
     api_router.include_router(logs.router)
     api_router.include_router(cookies.router)
+    api_router.include_router(drive.router)
     api_router.include_router(subscriptions.router)
     api_router.include_router(scheduler.router)
     return api_router

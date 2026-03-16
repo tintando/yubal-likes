@@ -2,6 +2,8 @@ import { listSubscriptions } from "@/api/subscriptions";
 import { AnimatedThemeToggler } from "@/components/magicui/animated-theme-toggler";
 import { CookieDropdown } from "@/features/cookies/cookie-dropdown";
 import { useCookies } from "@/features/cookies/use-cookies";
+import { DriveDropdown } from "@/features/drive/drive-dropdown";
+import { useDrive } from "@/features/drive/use-drive";
 import { useJobs } from "@/features/jobs/jobs-context";
 import { useVersionCheck } from "@/hooks/use-version-check";
 import {
@@ -45,6 +47,16 @@ export function Header() {
     handleDropdownAction,
     triggerFileUpload,
   } = useCookies();
+  const {
+    status: driveStatus,
+    isUploading: isDriveUploading,
+    isDeleting: isDriveDeleting,
+    isAuthorizing: isDriveAuthorizing,
+    fileInputRef: driveFileInputRef,
+    handleFileSelect: handleDriveFileSelect,
+    handleDropdownAction: handleDriveDropdownAction,
+    triggerFileUpload: triggerDriveFileUpload,
+  } = useDrive();
   const { data: versionInfo } = useVersionCheck();
   const { hasActiveJobs } = useJobs();
 
@@ -153,6 +165,17 @@ export function Header() {
           </Button>
         </NavbarItem>
         <NavbarItem className="hidden sm:flex">
+          <DriveDropdown
+            variant="desktop"
+            status={driveStatus}
+            isUploading={isDriveUploading}
+            isDeleting={isDriveDeleting}
+            isAuthorizing={isDriveAuthorizing}
+            onDropdownAction={handleDriveDropdownAction}
+            onUploadClick={triggerDriveFileUpload}
+          />
+        </NavbarItem>
+        <NavbarItem className="hidden sm:flex">
           <CookieDropdown
             variant="desktop"
             cookiesConfigured={cookiesConfigured}
@@ -195,6 +218,19 @@ export function Header() {
             onUploadClick={triggerFileUpload}
           />
         </NavbarMenuItem>
+        {driveStatus.enabled && (
+          <NavbarMenuItem>
+            <DriveDropdown
+              variant="mobile"
+              status={driveStatus}
+              isUploading={isDriveUploading}
+              isDeleting={isDriveDeleting}
+              isAuthorizing={isDriveAuthorizing}
+              onDropdownAction={handleDriveDropdownAction}
+              onUploadClick={triggerDriveFileUpload}
+            />
+          </NavbarMenuItem>
+        )}
         <NavbarMenuItem>
           <HeroUILink
             href="https://github.com/guillevc/yubal"
@@ -209,12 +245,19 @@ export function Header() {
         </NavbarMenuItem>
       </NavbarMenu>
 
-      {/* Hidden file input for cookie upload */}
+      {/* Hidden file inputs for uploads */}
       <input
         ref={fileInputRef}
         type="file"
         accept=".txt"
         onChange={handleFileSelect}
+        className="hidden"
+      />
+      <input
+        ref={driveFileInputRef}
+        type="file"
+        accept=".json"
+        onChange={handleDriveFileSelect}
         className="hidden"
       />
     </Navbar>

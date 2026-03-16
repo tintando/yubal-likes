@@ -118,6 +118,20 @@ class Settings(BaseSettings):
     # Timezone
     tz: Timezone = Field(default="UTC", description="Timezone for timestamps")
 
+    # Google Drive sync
+    gdrive_enabled: bool = Field(
+        default=False, description="Enable Google Drive sync after download"
+    )
+    gdrive_folder_id: str = Field(
+        default="", description="Root Drive folder ID to sync into"
+    )
+    gdrive_client_secrets_file: Path = Field(
+        default=Path(""), description="Path to OAuth2 client secrets JSON"
+    )
+    gdrive_token_file: Path = Field(
+        default=Path(""), description="Path to OAuth2 token JSON"
+    )
+
     @model_validator(mode="before")
     @classmethod
     def set_path_defaults(cls, data: Any) -> Any:
@@ -132,6 +146,12 @@ class Settings(BaseSettings):
             data["data"] = root / "data"
         if not data.get("config"):
             data["config"] = root / "config"
+        config = data.get("config", root / "config")
+        config = Path(config) if isinstance(config, str) else config
+        if not data.get("gdrive_client_secrets_file"):
+            data["gdrive_client_secrets_file"] = config / "yubal" / "gdrive_client_secrets.json"
+        if not data.get("gdrive_token_file"):
+            data["gdrive_token_file"] = config / "yubal" / "gdrive_token.json"
         return data
 
     @property
@@ -154,6 +174,20 @@ class Settings(BaseSettings):
     def cache_path(self) -> Path:
         """Directory for extraction cache (same as db_path parent)."""
         return self.db_path.parent
+
+    @property
+    def gdrive_client_configured(self) -> bool:
+        """Client secrets uploaded (may still need authorization)."""
+        return self.gdrive_enabled and bool(self.gdrive_folder_id) and self.gdrive_client_secrets_file.exists()
+
+    @property
+    def gdrive_authorized(self) -> bool:
+        """Fully authorized (can upload to Drive)."""
+        return self.gdrive_client_configured and self.gdrive_token_file.exists()
+
+    @property
+    def gdrive_configured(self) -> bool:
+        return self.gdrive_authorized
 
 
 @cache

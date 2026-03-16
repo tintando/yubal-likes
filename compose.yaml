@@ -6,9 +6,9 @@ services:
     image: yubal:local
     container_name: yubal
     user: 1000:1000
+    env_file: .env
     environment:
-      YUBAL_PORT: 8000
-      YUBAL_TZ: Europe/Madrid
+      YUBAL_HOST: 0.0.0.0
     ports:
       - 8000:8000
     volumes:

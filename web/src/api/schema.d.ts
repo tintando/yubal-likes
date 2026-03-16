@@ -21,6 +21,29 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/info": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Content Info
+         * @description Get metadata for a YouTube Music URL.
+         *
+         *     Returns title, artist, kind, track count, year, and thumbnail
+         *     from a single API call without running the full extraction pipeline.
+         */
+        get: operations["get_content_info_api_info_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/jobs": {
         parameters: {
             query?: never;
@@ -197,6 +220,90 @@ export interface paths {
          * @description Delete the cookies file.
          */
         delete: operations["delete_cookies_api_cookies_delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/drive/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Drive Status
+         * @description Get Google Drive configuration status.
+         */
+        get: operations["drive_status_api_drive_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/drive/credentials": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Upload Credentials
+         * @description Upload OAuth2 client secrets JSON.
+         */
+        post: operations["upload_credentials_api_drive_credentials_post"];
+        /**
+         * Delete Credentials
+         * @description Delete client secrets and token files.
+         */
+        delete: operations["delete_credentials_api_drive_credentials_delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/drive/auth/url": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Auth Url
+         * @description Generate Google OAuth2 authorization URL.
+         */
+        get: operations["get_auth_url_api_drive_auth_url_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/drive/auth/callback": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Auth Callback
+         * @description Handle Google OAuth2 callback, exchange code for tokens.
+         */
+        get: operations["auth_callback_api_drive_auth_callback_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
         options?: never;
         head?: never;
         patch?: never;
@@ -442,6 +549,47 @@ export interface components {
             max_items?: number | null;
         };
         /**
+         * DriveAuthUrlResponse
+         * @description Drive OAuth2 authorization URL response.
+         */
+        DriveAuthUrlResponse: {
+            /** Url */
+            url: string;
+        };
+        /**
+         * DriveCredentialsResponse
+         * @description Drive credentials operation response.
+         */
+        DriveCredentialsResponse: {
+            /**
+             * Status
+             * @constant
+             */
+            status: "ok";
+        };
+        /**
+         * DriveCredentialsUploadRequest
+         * @description Drive credentials upload request.
+         */
+        DriveCredentialsUploadRequest: {
+            /** Content */
+            content: string;
+        };
+        /**
+         * DriveStatusResponse
+         * @description Drive configuration status.
+         */
+        DriveStatusResponse: {
+            /** Enabled */
+            enabled: boolean;
+            /** Has Client Secrets */
+            has_client_secrets: boolean;
+            /** Authorized */
+            authorized: boolean;
+            /** Folder Id */
+            folder_id: string;
+        };
+        /**
          * ErrorResponse
          * @description Standard error response format.
          */
@@ -545,7 +693,7 @@ export interface components {
          * @description Status of a background job.
          * @enum {string}
          */
-        JobStatus: "pending" | "fetching_info" | "downloading" | "importing" | "completed" | "failed" | "cancelled";
+        JobStatus: "pending" | "fetching_info" | "downloading" | "importing" | "uploading" | "completed" | "failed" | "cancelled";
         /**
          * JobsResponse
          * @description Response for listing jobs.
@@ -1003,6 +1151,38 @@ export interface operations {
             };
         };
     };
+    get_content_info_api_info_get: {
+        parameters: {
+            query: {
+                /** @description YouTube Music URL (playlist, album, or track) */
+                url: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ContentInfo"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     list_jobs_api_jobs_get: {
         parameters: {
             query?: never;
@@ -1310,6 +1490,130 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["CookiesUploadResponse"];
+                };
+            };
+        };
+    };
+    drive_status_api_drive_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DriveStatusResponse"];
+                };
+            };
+        };
+    };
+    upload_credentials_api_drive_credentials_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DriveCredentialsUploadRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DriveCredentialsResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    delete_credentials_api_drive_credentials_delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DriveCredentialsResponse"];
+                };
+            };
+        };
+    };
+    get_auth_url_api_drive_auth_url_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DriveAuthUrlResponse"];
+                };
+            };
+        };
+    };
+    auth_callback_api_drive_auth_callback_get: {
+        parameters: {
+            query: {
+                code: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };

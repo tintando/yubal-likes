@@ -12,6 +12,7 @@ from yubal import AudioCodec, CancelToken, cleanup_part_files
 
 from yubal_api.domain.enums import JobSource, JobStatus, ProgressStep
 from yubal_api.domain.job import ContentInfo, Job
+from yubal_api.services.gdrive_service import GDriveService
 from yubal_api.services.protocols import JobExecutionStore
 from yubal_api.services.subscription_service import SubscriptionService
 from yubal_api.services.sync_service import SyncService
@@ -55,6 +56,7 @@ class JobExecutor:
         subscription_service: SubscriptionService | None = None,
         cache_path: Path | None = None,
         job_timeout: float = 1800,
+        gdrive_service: GDriveService | None = None,
     ) -> None:
         """Initialize the job executor.
 
@@ -84,6 +86,7 @@ class JobExecutor:
         self._subscription_service = subscription_service
         self._cache_path = cache_path
         self._job_timeout = job_timeout
+        self._gdrive_service = gdrive_service
 
         # Track background tasks to prevent GC during execution
         self._background_tasks: set[asyncio.Task[Any]] = set()
@@ -250,13 +253,6 @@ class JobExecutor:
                 if cancel_token.is_cancelled:
                     pass  # Status already set, cleanup happens in finally block
                 elif result.success:
-                    self._job_store.transition(
-                        job_id,
-                        JobStatus.COMPLETED,
-                        progress=PROGRESS_COMPLETE,
-                        content_info=result.content_info,
-                        download_stats=result.download_stats,
-                    )
                     # Update subscription metadata with latest info from YouTube Music
                     if (
                         self._subscription_service
@@ -275,6 +271,27 @@ class JobExecutor:
                     error_msg = result.error or "Unknown error"
                     logger.error("Job %s failed: %s", job_id[:8], error_msg)
                     self._job_store.transition(job_id, JobStatus.FAILED)
+
+            # Upload to Drive runs outside timeout context
+            if (
+                result.success
+                and not cancel_token.is_cancelled
+                and self._gdrive_service
+                and result.destination
+            ):
+                await self._upload_to_drive(
+                    job_id, Path(result.destination), cancel_token, result.content_info
+                )
+
+            # Transition to COMPLETED after upload (or if no upload needed)
+            if result.success and not cancel_token.is_cancelled:
+                self._job_store.transition(
+                    job_id,
+                    JobStatus.COMPLETED,
+                    progress=PROGRESS_COMPLETE,
+                    content_info=result.content_info,
+                    download_stats=result.download_stats,
+                )
 
         except TimeoutError:
             logger.warning(
@@ -301,6 +318,52 @@ class JobExecutor:
             self._job_store.release_active(job_id)
             self._start_next_pending()
 
+    async def _upload_to_drive(
+        self,
+        job_id: str,
+        destination: Path,
+        cancel_token: CancelToken,
+        content_info: ContentInfo | None,
+    ) -> None:
+        """Upload downloaded files to Google Drive."""
+        assert self._gdrive_service is not None
+
+        self._job_store.transition(
+            job_id, JobStatus.UPLOADING, progress=0.0, content_info=content_info
+        )
+
+        loop = asyncio.get_running_loop()
+
+        def on_progress(current: int, total: int, filename: str) -> None:
+            if cancel_token.is_cancelled:
+                return
+            progress = (current / total * 100.0) if total > 0 else 0.0
+            loop.call_soon_threadsafe(
+                partial(
+                    self._job_store.transition,
+                    job_id,
+                    JobStatus.UPLOADING,
+                    progress=progress,
+                )
+            )
+
+        try:
+            result = await asyncio.to_thread(
+                self._gdrive_service.upload_directory,
+                destination,
+                cancel_token,
+                on_progress,
+            )
+            logger.info(
+                "Drive upload for job %s: %d uploaded, %d skipped",
+                job_id[:8],
+                result.files_uploaded,
+                result.files_skipped,
+            )
+        except Exception as e:
+            # Drive upload failure shouldn't mark the job as failed
+            logger.error("Drive upload failed for job %s: %s", job_id[:8], e)
+
     @staticmethod
     def _step_to_status(step: ProgressStep) -> JobStatus:
         """Map progress step to job status."""
@@ -308,6 +371,7 @@ class JobExecutor:
             ProgressStep.FETCHING_INFO: JobStatus.FETCHING_INFO,
             ProgressStep.DOWNLOADING: JobStatus.DOWNLOADING,
             ProgressStep.IMPORTING: JobStatus.IMPORTING,
+            ProgressStep.UPLOADING: JobStatus.UPLOADING,
             ProgressStep.COMPLETED: JobStatus.COMPLETED,
             ProgressStep.FAILED: JobStatus.FAILED,
         }.get(step, JobStatus.DOWNLOADING)
