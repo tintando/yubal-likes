@@ -18,6 +18,7 @@ from fastapi import Depends
 
 from yubal_api.api.container import Services, get_services
 from yubal_api.services.gdrive_service import GDriveService
+from yubal_api.services.replaygain_scanner import ReplayGainScanner
 from yubal_api.services.job_event_bus import JobEventBus
 from yubal_api.services.job_executor import JobExecutor
 from yubal_api.services.job_store import JobStore
@@ -101,3 +102,10 @@ def _get_gdrive_service(services: ServicesDep) -> GDriveService | None:
 
 
 GDriveServiceDep = Annotated[GDriveService | None, Depends(_get_gdrive_service)]
+
+
+def _get_replaygain_scanner(services: ServicesDep) -> ReplayGainScanner:
+    return services.replaygain_scanner
+
+
+ReplayGainScannerDep = Annotated[ReplayGainScanner, Depends(_get_replaygain_scanner)]

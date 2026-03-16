@@ -35,6 +35,7 @@ from yubal_api.api.routes import (
     info,
     jobs,
     logs,
+    replaygain,
     scheduler,
     subscriptions,
 )
@@ -53,6 +54,7 @@ from yubal_api.services.job_store import JobStore
 from yubal_api.services.gdrive_service import GDriveService
 from yubal_api.services.log_buffer import BufferHandler, LogBuffer
 from yubal_api.services.playlist_info_service import PlaylistInfoService
+from yubal_api.services.replaygain_scanner import ReplayGainScanner
 from yubal_api.services.scheduler import Scheduler
 from yubal_api.services.shutdown_coordinator import ShutdownCoordinator
 from yubal_api.services.subscription_service import SubscriptionService
@@ -186,6 +188,12 @@ def create_services(repository: SubscriptionRepository) -> Services:
         gdrive_service=gdrive_service,
     )
 
+    # Create ReplayGain scanner
+    replaygain_scanner = ReplayGainScanner(
+        base_path=settings.data,
+        audio_format=settings.audio_format,
+    )
+
     # Create scheduler
     scheduler_service = Scheduler(
         subscription_service=subscription_service,
@@ -205,6 +213,7 @@ def create_services(repository: SubscriptionRepository) -> Services:
         job_event_bus=job_event_bus,
         log_buffer=log_buffer,
         gdrive_service=gdrive_service,
+        replaygain_scanner=replaygain_scanner,
     )
 
 
@@ -219,6 +228,7 @@ def create_api_router() -> APIRouter:
     api_router.include_router(drive.router)
     api_router.include_router(subscriptions.router)
     api_router.include_router(scheduler.router)
+    api_router.include_router(replaygain.router)
     return api_router
 
 

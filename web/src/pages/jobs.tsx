@@ -1,13 +1,47 @@
+import { startReplayGainScan } from "@/api/replaygain";
 import { UrlInput } from "@/components/common/url-input";
 import { LogsPanel } from "@/features/logs/logs-panel";
 import { JobsPanel } from "@/features/jobs/jobs-panel";
 import { useJobs } from "@/features/jobs/jobs-context";
 import { isValidUrl } from "@/lib/url";
+import { showErrorToast, showSuccessToast } from "@/lib/toast";
 import { Button, Input, Tooltip } from "@heroui/react";
-import { DownloadIcon, HashIcon } from "lucide-react";
+import { DownloadIcon, HashIcon, Volume2Icon } from "lucide-react";
 import { memo, useState } from "react";
 
 const DEFAULT_MAX_ITEMS = 100;
+
+const ReplayGainButton = memo(function ReplayGainButton() {
+  const [isLoading, setIsLoading] = useState(false);
+
+  const handleClick = async () => {
+    setIsLoading(true);
+    try {
+      const ok = await startReplayGainScan();
+      if (ok) {
+        showSuccessToast("ReplayGain", "Scan started");
+      } else {
+        showErrorToast("ReplayGain", "Failed to start scan");
+      }
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  return (
+    <Tooltip content="Re-apply ReplayGain tags to all files" offset={14}>
+      <Button
+        radius="lg"
+        variant="flat"
+        onPress={handleClick}
+        isLoading={isLoading}
+        startContent={!isLoading && <Volume2Icon className="h-4 w-4" />}
+      >
+        ReplayGain
+      </Button>
+    </Tooltip>
+  );
+});
 
 interface DownloadFormProps {
   onDownload: (url: string, maxItems: number) => Promise<void>;
@@ -63,6 +97,7 @@ const DownloadForm = memo(function DownloadForm({
       >
         Download
       </Button>
+      <ReplayGainButton />
     </section>
   );
 });

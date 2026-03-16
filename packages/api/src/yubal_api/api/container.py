@@ -14,6 +14,7 @@ from yubal_api.services.job_event_bus import JobEventBus
 from yubal_api.services.job_executor import JobExecutor
 from yubal_api.services.job_store import JobStore
 from yubal_api.services.log_buffer import LogBuffer
+from yubal_api.services.replaygain_scanner import ReplayGainScanner
 from yubal_api.services.scheduler import Scheduler
 from yubal_api.services.shutdown_coordinator import ShutdownCoordinator
 from yubal_api.services.subscription_service import SubscriptionService
@@ -37,6 +38,7 @@ class Services:
     job_event_bus: JobEventBus
     log_buffer: LogBuffer
     gdrive_service: GDriveService | None
+    replaygain_scanner: ReplayGainScanner
 
     def close(self) -> None:
         """Clean up resources. Called at application shutdown."""

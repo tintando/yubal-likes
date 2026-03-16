@@ -417,6 +417,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/replaygain/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Replaygain Status */
+        get: operations["replaygain_status_api_replaygain_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/replaygain/scan": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Start Replaygain Scan */
+        post: operations["start_replaygain_scan_api_replaygain_scan_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -925,6 +959,25 @@ export interface components {
             skipped_by_reason?: {
                 [key: string]: number;
             };
+        };
+        /** ReplayGainScanResponse */
+        ReplayGainScanResponse: {
+            /**
+             * Status
+             * @constant
+             */
+            status: "started";
+        };
+        /** ReplayGainStatusResponse */
+        ReplayGainStatusResponse: {
+            /** Available */
+            available: boolean;
+            /** Running */
+            running: boolean;
+            /** Progress */
+            progress?: number | null;
+            /** Current Directory */
+            current_directory?: string | null;
         };
         /**
          * SchedulerStatus
@@ -1591,6 +1644,7 @@ export interface operations {
         parameters: {
             query: {
                 code: string;
+                state: string;
             };
             header?: never;
             path?: never;
@@ -1814,6 +1868,46 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["SchedulerStatus"];
+                };
+            };
+        };
+    };
+    replaygain_status_api_replaygain_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReplayGainStatusResponse"];
+                };
+            };
+        };
+    };
+    start_replaygain_scan_api_replaygain_scan_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReplayGainScanResponse"];
                 };
             };
         };

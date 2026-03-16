@@ -104,6 +104,8 @@ class GDriveService:
         if total == 0:
             return GDriveUploadResult()
 
+        logger.info("Drive upload: %d files to check", total)
+
         uploaded = 0
         skipped = 0
         bytes_uploaded = 0
@@ -118,8 +120,9 @@ class GDriveService:
 
             if self._file_exists(service, file_path.name, parent_id, file_path.stat().st_size):
                 skipped += 1
-                logger.debug("Skipped (exists): %s", rel)
+                logger.info("[%d/%d] Skipped (exists): %s", i + 1, total, rel)
             else:
+                logger.info("[%d/%d] Uploading: %s", i + 1, total, rel)
                 self._upload_file(service, file_path, parent_id)
                 uploaded += 1
                 bytes_uploaded += file_path.stat().st_size
@@ -167,8 +170,9 @@ class GDriveService:
     @staticmethod
     def _find_folder(service, name: str, parent_id: str) -> str | None:
         """Find a folder by name under a parent."""
+        escaped = name.replace("\\", "\\\\").replace("'", "\\'")
         query = (
-            f"name = '{name}' and '{parent_id}' in parents "
+            f"name = '{escaped}' and '{parent_id}' in parents "
             f"and mimeType = '{FOLDER_MIME}' and trashed = false"
         )
         resp = service.files().list(q=query, fields="files(id)", pageSize=1).execute()
@@ -189,8 +193,9 @@ class GDriveService:
     @staticmethod
     def _file_exists(service, name: str, parent_id: str, local_size: int) -> bool:
         """Check if a file with the same name and size exists in the parent folder."""
+        escaped = name.replace("\\", "\\\\").replace("'", "\\'")
         query = (
-            f"name = '{name}' and '{parent_id}' in parents "
+            f"name = '{escaped}' and '{parent_id}' in parents "
             f"and mimeType != '{FOLDER_MIME}' and trashed = false"
         )
         resp = (

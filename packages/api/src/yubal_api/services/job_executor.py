@@ -277,10 +277,9 @@ class JobExecutor:
                 result.success
                 and not cancel_token.is_cancelled
                 and self._gdrive_service
-                and result.destination
             ):
                 await self._upload_to_drive(
-                    job_id, Path(result.destination), cancel_token, result.content_info
+                    job_id, self._base_path, cancel_token, result.content_info
                 )
 
             # Transition to COMPLETED after upload (or if no upload needed)
