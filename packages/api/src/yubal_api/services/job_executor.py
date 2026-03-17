@@ -12,6 +12,7 @@ from yubal import AudioCodec, CancelToken, cleanup_part_files
 
 from yubal_api.domain.enums import JobSource, JobStatus, ProgressStep
 from yubal_api.domain.job import ContentInfo, Job
+from yubal_api.services.cleanup_service import CleanupService
 from yubal_api.services.gdrive_service import GDriveService
 from yubal_api.services.protocols import JobExecutionStore
 from yubal_api.services.subscription_service import SubscriptionService
@@ -282,7 +283,13 @@ class JobExecutor:
                     job_id, self._base_path, cancel_token, result.content_info
                 )
 
-            # Transition to COMPLETED after upload (or if no upload needed)
+            # Run orphan cleanup after upload, before COMPLETED
+            if result.success and not cancel_token.is_cancelled:
+                await self._run_cleanup(
+                    job_id, cancel_token, result.content_info
+                )
+
+            # Transition to COMPLETED after cleanup (or if no cleanup needed)
             if result.success and not cancel_token.is_cancelled:
                 self._job_store.transition(
                     job_id,
@@ -316,6 +323,26 @@ class JobExecutor:
             # This ensures no concurrent downloads
             self._job_store.release_active(job_id)
             self._start_next_pending()
+
+    async def _run_cleanup(
+        self,
+        job_id: str,
+        cancel_token: CancelToken,
+        content_info: ContentInfo | None,
+    ) -> None:
+        """Run orphan file cleanup after sync."""
+        self._job_store.transition(
+            job_id, JobStatus.CLEANING, progress=0.0, content_info=content_info
+        )
+
+        audio_ext = {f".{self._audio_format.value}"}
+        cleanup = CleanupService(self._base_path, audio_ext)
+        cleanup_result = await asyncio.to_thread(cleanup.cleanup_orphans)
+        logger.info(
+            "Cleanup: %d files deleted, %d bytes freed",
+            cleanup_result.files_deleted,
+            cleanup_result.bytes_freed,
+        )
 
     async def _upload_to_drive(
         self,
@@ -371,6 +398,7 @@ class JobExecutor:
             ProgressStep.DOWNLOADING: JobStatus.DOWNLOADING,
             ProgressStep.IMPORTING: JobStatus.IMPORTING,
             ProgressStep.UPLOADING: JobStatus.UPLOADING,
+            ProgressStep.CLEANING: JobStatus.CLEANING,
             ProgressStep.COMPLETED: JobStatus.COMPLETED,
             ProgressStep.FAILED: JobStatus.FAILED,
         }.get(step, JobStatus.DOWNLOADING)

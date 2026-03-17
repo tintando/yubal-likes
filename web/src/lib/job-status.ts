@@ -6,6 +6,7 @@ const RUNNING_STATUSES = new Set<JobStatus>([
   "downloading",
   "importing",
   "uploading",
+  "cleaning",
 ]);
 
 /** Active states that indicate job is in progress (includes pending) */

@@ -104,7 +104,11 @@ class GDriveService:
         if total == 0:
             return GDriveUploadResult()
 
-        logger.info("Drive upload: %d files to check", total)
+        logger.info(
+            "Uploading %d files to Google Drive",
+            total,
+            extra={"phase": "uploading", "phase_num": 5},
+        )
 
         uploaded = 0
         skipped = 0
@@ -120,9 +124,13 @@ class GDriveService:
 
             if self._file_exists(service, file_path.name, parent_id, file_path.stat().st_size):
                 skipped += 1
-                logger.info("[%d/%d] Skipped (exists): %s", i + 1, total, rel)
+                logger.info(
+                    "Skipped (exists): %s", rel, extra={"current": i, "total": total}
+                )
             else:
-                logger.info("[%d/%d] Uploading: %s", i + 1, total, rel)
+                logger.info(
+                    "Uploading: %s", rel, extra={"current": i, "total": total}
+                )
                 self._upload_file(service, file_path, parent_id)
                 uploaded += 1
                 bytes_uploaded += file_path.stat().st_size
@@ -136,10 +144,14 @@ class GDriveService:
             bytes_uploaded=bytes_uploaded,
         )
         logger.info(
-            "Drive upload complete: %d uploaded, %d skipped, %d bytes",
-            result.files_uploaded,
-            result.files_skipped,
-            result.bytes_uploaded,
+            "Upload complete",
+            extra={
+                "stats": {
+                    "stats_type": "upload",
+                    "success": uploaded,
+                    "skipped_by_reason": {"file_exists": skipped},
+                }
+            },
         )
         return result
 

@@ -152,6 +152,55 @@ function DownloadStatsLog({
   );
 }
 
+/** Upload stats display */
+function UploadStatsLog({
+  success,
+  skippedByReason,
+}: {
+  success: number;
+  skippedByReason: SkippedByReason;
+}) {
+  const totalSkipped = Object.values(skippedByReason).reduce(
+    (a, b) => a + b,
+    0,
+  );
+
+  return (
+    <div className="flex items-center gap-1">
+      <CheckIcon className={`${ICON_CLASS} text-success`} />
+      <span className="text-success">{success} uploaded</span>
+      {totalSkipped > 0 && (
+        <>
+          <span>,</span>
+          <span className="text-secondary">
+            {formatSkippedMessage(skippedByReason)}
+          </span>
+        </>
+      )}
+    </div>
+  );
+}
+
+/** Cleanup stats display */
+function CleanupStatsLog({ success }: { success: number }) {
+  return (
+    <div className="flex items-center gap-1">
+      <CheckIcon className={`${ICON_CLASS} text-success`} />
+      <span className="text-success">{success} orphaned files removed</span>
+    </div>
+  );
+}
+
+/** ReplayGain stats display */
+function ReplayGainStatsLog({ success }: { success: number }) {
+  return (
+    <div className="flex items-center gap-1">
+      <CheckIcon className={`${ICON_CLASS} text-success`} />
+      <span className="text-success">{success} directories scanned</span>
+    </div>
+  );
+}
+
 /** Progress tracking display */
 function ProgressLog({
   current,
@@ -251,6 +300,23 @@ export function LogLine({ entry }: { entry: LogEntry }) {
             skippedByReason={skippedByReason}
           />
         );
+      }
+
+      if (stats.stats_type === "upload") {
+        return (
+          <UploadStatsLog
+            success={stats.success ?? 0}
+            skippedByReason={skippedByReason}
+          />
+        );
+      }
+
+      if (stats.stats_type === "replaygain") {
+        return <ReplayGainStatsLog success={stats.success ?? 0} />;
+      }
+
+      if (stats.stats_type === "cleanup") {
+        return <CleanupStatsLog success={stats.success ?? 0} />;
       }
 
       // Default to download stats (stats_type === "download")

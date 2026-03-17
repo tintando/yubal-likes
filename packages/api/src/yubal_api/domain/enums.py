@@ -9,6 +9,7 @@ class JobStatus(StrEnum):
     DOWNLOADING = "downloading"  # Downloading tracks (0-80%)
     IMPORTING = "importing"  # Beets import (80-100%)
     UPLOADING = "uploading"  # Google Drive upload
+    CLEANING = "cleaning"  # Orphan file cleanup
     COMPLETED = "completed"
     FAILED = "failed"
     CANCELLED = "cancelled"
@@ -29,6 +30,7 @@ class ProgressStep(StrEnum):
     DOWNLOADING = "downloading"
     IMPORTING = "importing"
     UPLOADING = "uploading"
+    CLEANING = "cleaning"
     COMPLETED = "completed"
     FAILED = "failed"
 

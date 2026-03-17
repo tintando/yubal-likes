@@ -727,7 +727,7 @@ export interface components {
          * @description Status of a background job.
          * @enum {string}
          */
-        JobStatus: "pending" | "fetching_info" | "downloading" | "importing" | "uploading" | "completed" | "failed" | "cancelled";
+        JobStatus: "pending" | "fetching_info" | "downloading" | "importing" | "uploading" | "cleaning" | "completed" | "failed" | "cancelled";
         /**
          * JobsResponse
          * @description Response for listing jobs.
@@ -807,10 +807,10 @@ export interface components {
              * @description Current operation phase
              * @default null
              */
-            phase: ("extracting" | "downloading" | "composing" | "normalizing") | null;
+            phase: ("extracting" | "downloading" | "composing" | "normalizing" | "uploading" | "scanning" | "cleaning") | null;
             /**
              * Phase Num
-             * @description Phase number (1-4)
+             * @description Phase number (1-6)
              * @default null
              */
             phase_num: number | null;
@@ -893,7 +893,7 @@ export interface components {
              * @description Type of stats: 'extraction' or 'download'
              * @enum {string}
              */
-            stats_type: "extraction" | "download";
+            stats_type: "extraction" | "download" | "upload" | "replaygain" | "cleanup";
             /**
              * Success
              * @default 0

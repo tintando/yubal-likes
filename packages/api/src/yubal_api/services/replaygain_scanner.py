@@ -83,8 +83,12 @@ class ReplayGainScanner:
             return
 
         total = len(dirs_with_audio)
-        logger.info("ReplayGain scan: processing %d directories", total)
+        logger.info("Starting ReplayGain scan", extra={"header": "ReplayGain Scan"})
+        logger.info(
+            "Scanning %d directories", total, extra={"phase": "scanning", "phase_num": 1}
+        )
 
+        scanned = 0
         for i, directory in enumerate(dirs_with_audio):
             if self._cancel.is_set():
                 logger.info("ReplayGain scan cancelled")
@@ -96,10 +100,16 @@ class ReplayGainScanner:
 
             files = sorted(directory.glob(f"*{ext}"))
             if files:
-                logger.info("ReplayGain: scanning %s (%d files)", rel, len(files))
+                logger.info(
+                    "%s (%d files)", rel, len(files), extra={"current": i, "total": total}
+                )
                 self._replaygain.apply_replaygain(
                     files, self._audio_format, album_mode=True
                 )
+                scanned += 1
 
         self._progress = 100.0
-        logger.info("ReplayGain scan complete")
+        logger.info(
+            "Scan complete",
+            extra={"stats": {"stats_type": "replaygain", "success": scanned}},
+        )

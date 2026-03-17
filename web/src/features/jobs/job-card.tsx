@@ -18,6 +18,7 @@ import {
   ExternalLinkIcon,
   Loader2,
   Loader2Icon,
+  RotateCwIcon,
   Trash2Icon,
   XCircleIcon,
   XIcon,
@@ -29,6 +30,7 @@ type Props = {
   job: Job;
   onCancel?: (jobId: string) => void;
   onDelete?: (jobId: string) => void;
+  onRetry?: (jobId: string) => void;
 };
 
 type ProgressColor =
@@ -75,6 +77,12 @@ const STATUS_CONFIG: Record<
     icon: Loader2Icon,
     color: "text-primary",
     progressColor: "primary",
+    spin: true,
+  },
+  cleaning: {
+    icon: Loader2Icon,
+    color: "text-secondary",
+    progressColor: "secondary",
     spin: true,
   },
   completed: {
@@ -216,7 +224,7 @@ function ContentInfo({
   );
 }
 
-export function JobCard({ job, onCancel, onDelete }: Props) {
+export function JobCard({ job, onCancel, onDelete, onRetry }: Props) {
   const isJobActive = isActive(job.status);
   const isJobRunning = isRunning(job.status);
   const isJobFinished = isFinished(job.status);
@@ -278,6 +286,20 @@ export function JobCard({ job, onCancel, onDelete }: Props) {
           >
             <XIcon className="h-4 w-4" />
           </Button>
+        )}
+
+        {job.status === "failed" && onRetry && (
+          <Tooltip content="Retry download" closeDelay={0}>
+            <Button
+              variant="light"
+              size="sm"
+              isIconOnly
+              className="text-foreground-500 hover:text-primary h-7 w-7 shrink-0"
+              onPress={() => onRetry(job.id)}
+            >
+              <RotateCwIcon className="h-4 w-4" />
+            </Button>
+          </Tooltip>
         )}
 
         {isJobFinished && onDelete && (

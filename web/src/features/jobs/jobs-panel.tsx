@@ -10,9 +10,10 @@ type Props = {
   isLoading: boolean;
   onCancel: (jobId: string) => void;
   onDelete: (jobId: string) => void;
+  onRetry: (jobId: string) => void;
 };
 
-export function JobsPanel({ jobs, isLoading, onCancel, onDelete }: Props) {
+export function JobsPanel({ jobs, isLoading, onCancel, onDelete, onRetry }: Props) {
   return (
     <Panel>
       <PanelHeader
@@ -44,6 +45,7 @@ export function JobsPanel({ jobs, isLoading, onCancel, onDelete }: Props) {
                 job={job}
                 onCancel={isActive(job.status) ? onCancel : undefined}
                 onDelete={!isActive(job.status) ? onDelete : undefined}
+                onRetry={job.status === "failed" ? onRetry : undefined}
               />
             ))}
           </div>

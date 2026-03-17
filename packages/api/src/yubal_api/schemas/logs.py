@@ -20,10 +20,10 @@ SkipReasonType = Literal[
 ]
 
 # Stats type discriminator for frontend rendering
-StatsType = Literal["extraction", "download"]
+StatsType = Literal["extraction", "download", "upload", "replaygain", "cleanup"]
 
 # Phase names for the download pipeline
-PhaseType = Literal["extracting", "downloading", "composing", "normalizing"]
+PhaseType = Literal["extracting", "downloading", "composing", "normalizing", "uploading", "scanning", "cleaning"]
 
 # Event type discriminator for progress entries
 EventType = Literal["track_download"]
@@ -46,7 +46,7 @@ class LogStats(BaseModel):
     """
 
     stats_type: StatsType = Field(
-        ..., description="Type of stats: 'extraction' or 'download'"
+        ..., description="Type of stats: extraction, download, upload, or replaygain"
     )
     success: int = 0
     cached: int = 0
@@ -85,7 +85,7 @@ class LogEntry(BaseModel):
 
     # Optional structured fields for enhanced frontend rendering
     phase: PhaseType | None = Field(None, description="Current operation phase")
-    phase_num: int | None = Field(None, description="Phase number (1-4)", ge=1, le=4)
+    phase_num: int | None = Field(None, description="Phase number (1-6)", ge=1, le=6)
     event_type: EventType | None = Field(
         None, description="Specific event type for granular tracking"
     )

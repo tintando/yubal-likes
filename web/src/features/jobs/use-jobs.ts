@@ -122,6 +122,18 @@ export function useJobsState() {
     }
   }, []);
 
+  const retryJob = useCallback(
+    async (jobId: string) => {
+      const job = jobs.find((j) => j.id === jobId);
+      if (!job) return;
+      const result = await createJob(job.url, job.max_items ?? undefined);
+      if (!result.success) {
+        showErrorToast("Retry failed", result.error);
+      }
+    },
+    [jobs],
+  );
+
   const hasActiveJobs = jobs.some((j) => isActive(j.status));
 
   return {
@@ -132,6 +144,7 @@ export function useJobsState() {
     startJob,
     cancelJob,
     deleteJob,
+    retryJob,
   };
 }
 
