@@ -530,7 +530,22 @@ class _SyncWorkflow:
         percent: float,
     ) -> None:
         """Process download phase progress update."""
-        self._emit(step, _format_download_message(progress), percent)
+        details: dict[str, Any] | None = None
+        dp = progress.download_progress
+        if dp and dp.result:
+            r = dp.result
+            details = {
+                "status": r.status.value,
+                "track_title": r.track.title,
+                "track_artist": r.track.artist,
+            }
+            if r.output_path:
+                try:
+                    details["path"] = str(r.output_path.relative_to(self.base_path))
+                except ValueError:
+                    details["path"] = str(r.output_path)
+
+        self._emit(step, _format_download_message(progress), percent, details)
 
         # Update bitrate from first successful download
         self._update_bitrate_if_available(progress)

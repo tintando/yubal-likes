@@ -17,6 +17,8 @@ from typing import Annotated
 from fastapi import Depends
 
 from yubal_api.api.container import Services, get_services
+from yubal_api.db.history_repository import HistoryRepository
+from yubal_api.db.keep_list_repository import KeepListRepository
 from yubal_api.services.gdrive_service import GDriveService
 from yubal_api.services.replaygain_scanner import ReplayGainScanner
 from yubal_api.services.job_event_bus import JobEventBus
@@ -109,3 +111,17 @@ def _get_replaygain_scanner(services: ServicesDep) -> ReplayGainScanner:
 
 
 ReplayGainScannerDep = Annotated[ReplayGainScanner, Depends(_get_replaygain_scanner)]
+
+
+def _get_history_repository(services: ServicesDep) -> HistoryRepository:
+    return services.history_repository
+
+
+HistoryRepositoryDep = Annotated[HistoryRepository, Depends(_get_history_repository)]
+
+
+def _get_keep_list_repository(services: ServicesDep) -> KeepListRepository:
+    return services.keep_list_repository
+
+
+KeepListRepositoryDep = Annotated[KeepListRepository, Depends(_get_keep_list_repository)]

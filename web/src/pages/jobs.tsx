@@ -1,3 +1,4 @@
+import { listSyncs, type SyncHistory } from "@/api/history";
 import { startReplayGainScan } from "@/api/replaygain";
 import { getStatus } from "@/api/subscriptions";
 import type { SchedulerStatus } from "@/api/subscriptions";
@@ -85,13 +86,15 @@ function NextSyncCard({ status }: { status: SchedulerStatus | null }) {
   );
 }
 
-function Dashboard({ jobs, schedulerStatus }: {
+function Dashboard({ jobs, schedulerStatus, lastSync }: {
   jobs: ReturnType<typeof useJobs>["jobs"];
   schedulerStatus: SchedulerStatus | null;
+  lastSync: SyncHistory | null;
 }) {
+  // Prefer persistent history, fall back to in-memory jobs
   const lastCompleted = jobs.find((j) => j.status === "completed");
-  const trackCount = lastCompleted?.content_info?.track_count;
-  const lastSyncedAt = lastCompleted?.completed_at;
+  const trackCount = lastSync?.track_count ?? lastCompleted?.content_info?.track_count;
+  const lastSyncedAt = lastSync?.completed_at ?? lastCompleted?.completed_at;
   const timeAgo = useTimeAgo(lastSyncedAt);
 
   return (
@@ -124,9 +127,15 @@ function Dashboard({ jobs, schedulerStatus }: {
 export function JobsPage() {
   const { jobs, isLoading, startJob, cancelJob, deleteJob, retryJob } = useJobs();
   const [schedulerStatus, setSchedulerStatus] = useState<SchedulerStatus | null>(null);
+  const [lastSync, setLastSync] = useState<SyncHistory | null>(null);
+  const [syncHistory, setSyncHistory] = useState<SyncHistory[]>([]);
 
   useEffect(() => {
     getStatus().then(setSchedulerStatus);
+    listSyncs(10, 0).then((res) => {
+      setLastSync(res.items[0] ?? null);
+      setSyncHistory(res.items);
+    });
   }, []);
 
   const handleSync = () => {
@@ -145,12 +154,13 @@ export function JobsPage() {
 
       <SyncSection onSync={handleSync} />
 
-      <Dashboard jobs={jobs} schedulerStatus={schedulerStatus} />
+      <Dashboard jobs={jobs} schedulerStatus={schedulerStatus} lastSync={lastSync} />
 
       <section className="flex flex-col gap-6">
         {reviewJob && <OrphanReview job={reviewJob} />}
         <JobsPanel
           jobs={jobs}
+          history={syncHistory}
           isLoading={isLoading}
           onCancel={cancelJob}
           onDelete={handleDeleteJob}

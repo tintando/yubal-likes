@@ -10,11 +10,14 @@ from uuid import UUID
 
 from yubal import AudioCodec, CancelToken, cleanup_part_files
 
+from yubal_api.db.history_repository import HistoryRepository
+from yubal_api.db.keep_list_repository import KeepListRepository
+from yubal_api.db.sync_history import SyncHistory
+from yubal_api.db.track_event import TrackEvent
 from yubal_api.domain.enums import JobSource, JobStatus, ProgressStep
 from yubal_api.domain.job import ContentInfo, Job, OrphanFile
 from yubal_api.services.cleanup_service import CleanupService
 from yubal_api.services.gdrive_service import GDriveService
-from yubal_api.services.keep_list import KeepList
 from yubal_api.services.protocols import JobExecutionStore
 from yubal_api.services.subscription_service import SubscriptionService
 from yubal_api.services.sync_service import SyncService
@@ -59,6 +62,8 @@ class JobExecutor:
         cache_path: Path | None = None,
         job_timeout: float = 1800,
         gdrive_service: GDriveService | None = None,
+        history_repository: HistoryRepository | None = None,
+        keep_list_repository: KeepListRepository | None = None,
     ) -> None:
         """Initialize the job executor.
 
@@ -89,11 +94,15 @@ class JobExecutor:
         self._cache_path = cache_path
         self._job_timeout = job_timeout
         self._gdrive_service = gdrive_service
+        self._history_repository = history_repository
+        self._keep_list_repository = keep_list_repository
 
         # Track background tasks to prevent GC during execution
         self._background_tasks: set[asyncio.Task[Any]] = set()
         # Map job_id -> CancelToken for cancellation support
         self._cancel_tokens: dict[str, CancelToken] = {}
+        # Map job_id -> sync history UUID for orphan resolution
+        self._current_sync_ids: dict[str, UUID] = {}
 
     def create_and_start_job(
         self,
@@ -187,6 +196,9 @@ class JobExecutor:
         """Background task that runs the sync operation."""
         cancel_token = CancelToken()
         self._cancel_tokens[job_id] = cancel_token
+        started_at = datetime.now(UTC)
+        # Collect added tracks during download for history recording
+        added_tracks: list[tuple[str, str | None, str | None]] = []
 
         try:
             # Check cancellation before starting (CancelToken is single source of truth)
@@ -197,7 +209,7 @@ class JobExecutor:
                 self._job_store.transition(
                     job_id,
                     JobStatus.FETCHING_INFO,
-                    started_at=datetime.now(UTC),
+                    started_at=started_at,
                 )
 
                 # Create progress callback that updates job store
@@ -216,6 +228,19 @@ class JobExecutor:
                     content_info = (
                         self._parse_content_info(details) if details else None
                     )
+
+                    # Collect track additions from download progress
+                    if (
+                        step == ProgressStep.DOWNLOADING
+                        and details
+                        and details.get("status") == "success"
+                        and details.get("path")
+                    ):
+                        added_tracks.append((
+                            details["path"],
+                            details.get("track_title"),
+                            details.get("track_artist"),
+                        ))
 
                     # Skip terminal states - handled by result
                     if status in (JobStatus.COMPLETED, JobStatus.FAILED):
@@ -301,6 +326,22 @@ class JobExecutor:
                     download_stats=result.download_stats,
                 )
 
+            # Record sync history
+            if self._history_repository:
+                self._record_history(
+                    job_id=job_id,
+                    result=result,
+                    started_at=started_at,
+                    added_tracks=added_tracks,
+                    cancel_token=cancel_token,
+                    job_source=str(
+                        self._job_store.get(job_id).source
+                        if hasattr(self._job_store, "get")
+                        and self._job_store.get(job_id)
+                        else "manual"
+                    ),
+                )
+
         except TimeoutError:
             logger.warning(
                 "Job %s timed out after %d seconds", job_id[:8], self._job_timeout
@@ -320,11 +361,67 @@ class JobExecutor:
                     logger.info("Cleaned up %d partial download(s)", cleaned)
 
             self._cancel_tokens.pop(job_id, None)
+            self._current_sync_ids.pop(job_id, None)
 
             # Release active job slot AFTER cleanup, then start next
             # This ensures no concurrent downloads
             self._job_store.release_active(job_id)
             self._start_next_pending()
+
+    def _record_history(
+        self,
+        job_id: str,
+        result: Any,
+        started_at: datetime,
+        added_tracks: list[tuple[str, str | None, str | None]],
+        cancel_token: CancelToken,
+        job_source: str = "manual",
+    ) -> None:
+        """Record sync history and track events to database."""
+        if not self._history_repository:
+            return
+
+        try:
+            if cancel_token.is_cancelled:
+                status = "cancelled"
+            elif result.success:
+                status = "completed"
+            else:
+                status = "failed"
+
+            sync = SyncHistory(
+                source=job_source,
+                status=status,
+                track_count=result.content_info.track_count if result.content_info else None,
+                tracks_added=result.download_stats.success if result.download_stats else 0,
+                tracks_failed=result.download_stats.failed if result.download_stats else 0,
+                tracks_skipped=result.download_stats.skipped if result.download_stats else 0,
+                audio_codec=result.content_info.audio_codec if result.content_info else None,
+                audio_bitrate=result.content_info.audio_bitrate if result.content_info else None,
+                started_at=started_at,
+                completed_at=datetime.now(UTC),
+            )
+            sync = self._history_repository.record_sync(sync)
+
+            # Record track addition events
+            if added_tracks:
+                events = [
+                    TrackEvent(
+                        sync_id=sync.id,
+                        event="added",
+                        path=path,
+                        title=title,
+                        artist=artist,
+                    )
+                    for path, title, artist in added_tracks
+                ]
+                self._history_repository.record_track_events(events)
+
+            # Store sync_id on the job for orphan resolution to reference later
+            self._current_sync_ids[job_id] = sync.id
+
+        except Exception as e:
+            logger.warning("Failed to record sync history: %s", e)
 
     async def _run_cleanup(
         self,
@@ -341,9 +438,14 @@ class JobExecutor:
         cleanup = CleanupService(self._base_path, audio_ext)
         orphans = await asyncio.to_thread(cleanup.find_orphans)
 
-        # Filter out keep-list entries
-        keep_list = KeepList(self._base_path / ".yubal_keep.json")
-        orphans = [o for o in orphans if not keep_list.contains(o.path)]
+        # Filter out keep-list entries (DB-backed or legacy JSON)
+        if self._keep_list_repository:
+            orphans = [o for o in orphans if not self._keep_list_repository.contains(o.path)]
+        else:
+            from yubal_api.services.keep_list import KeepList
+
+            keep_list = KeepList(self._base_path / ".yubal_keep.json")
+            orphans = [o for o in orphans if not keep_list.contains(o.path)]
 
         if orphans:
             self._job_store.transition(
@@ -376,16 +478,25 @@ class JobExecutor:
 
         audio_ext = {f".{self._audio_format.value}"}
         cleanup = CleanupService(self._base_path, audio_ext)
-        keep_list = KeepList(self._base_path / ".yubal_keep.json")
 
         to_delete: list[Path] = []
+        to_keep_count = 0
         for decision in decisions:
             path = decision["path"]
             action = decision["action"]
             if action == "delete":
                 to_delete.append(self._base_path / path)
             elif action == "never_delete":
-                keep_list.add(path)
+                if self._keep_list_repository:
+                    self._keep_list_repository.add(path)
+                else:
+                    from yubal_api.services.keep_list import KeepList
+
+                    keep_list = KeepList(self._base_path / ".yubal_keep.json")
+                    keep_list.add(path)
+                to_keep_count += 1
+            else:
+                to_keep_count += 1
 
         if to_delete:
             result = cleanup.delete_files(to_delete)
@@ -394,6 +505,32 @@ class JobExecutor:
                 result.files_deleted,
                 result.bytes_freed,
             )
+
+        # Record orphan events and update sync history
+        sync_id = self._current_sync_ids.pop(job_id, None)
+        if self._history_repository:
+            try:
+                # Record deleted track events
+                if to_delete:
+                    delete_events = [
+                        TrackEvent(
+                            sync_id=sync_id,
+                            event="deleted",
+                            path=str(p.relative_to(self._base_path)),
+                        )
+                        for p in to_delete
+                    ]
+                    self._history_repository.record_track_events(delete_events)
+
+                # Update sync history with orphan counts
+                if sync_id:
+                    self._history_repository.update_sync(
+                        sync_id,
+                        orphans_deleted=len(to_delete),
+                        orphans_kept=to_keep_count,
+                    )
+            except Exception as e:
+                logger.warning("Failed to record orphan history: %s", e)
 
         self._job_store.transition(
             job_id,

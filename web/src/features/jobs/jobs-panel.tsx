@@ -1,3 +1,4 @@
+import type { SyncHistory } from "@/api/history";
 import type { Job } from "@/api/jobs";
 import { EmptyState } from "@/components/common/empty-state";
 import { Panel, PanelContent, PanelHeader } from "@/components/common/panel";
@@ -6,10 +7,12 @@ import { formatDateTime } from "@/lib/format";
 import { isActive, isFinished, isRunning } from "@/lib/job-status";
 import { Button, Progress, Tooltip } from "@heroui/react";
 import {
+  CheckCircleIcon,
   HistoryIcon,
   InboxIcon,
   RotateCwIcon,
   Trash2Icon,
+  XCircleIcon,
   XIcon,
   ZapIcon,
 } from "lucide-react";
@@ -17,6 +20,7 @@ import { STATUS_CONFIG, StatusIcon } from "./job-card";
 
 type Props = {
   jobs: Job[];
+  history: SyncHistory[];
   isLoading: boolean;
   onCancel: (jobId: string) => void;
   onDelete: (jobId: string) => void;
@@ -152,15 +156,68 @@ function JobRow({
   );
 }
 
-export function JobsPanel({ jobs, isLoading, onCancel, onDelete, onRetry }: Props) {
+function SyncHistoryRow({ sync }: { sync: SyncHistory }) {
+  const isFailed = sync.status === "failed";
+  const isCancelled = sync.status === "cancelled";
+  const dateStr = formatDateTime(sync.completed_at ?? sync.created_at);
+
+  const Icon = isFailed ? XCircleIcon : isCancelled ? XIcon : CheckCircleIcon;
+  const iconColor = isFailed
+    ? "text-danger"
+    : isCancelled
+      ? "text-warning"
+      : "text-success";
+
+  let summary: string;
+  if (isFailed) {
+    summary = "failed";
+  } else if (isCancelled) {
+    summary = "cancelled";
+  } else if (sync.track_count) {
+    const parts = [`${sync.track_count} tracks`];
+    if (sync.tracks_added > 0) parts.push(`+${sync.tracks_added}`);
+    if (sync.orphans_deleted > 0) parts.push(`-${sync.orphans_deleted}`);
+    summary = parts.join(", ");
+  } else {
+    summary = "completed";
+  }
+
+  const opacity = isCancelled ? "opacity-50" : "";
+
+  return (
+    <div className={`group ${opacity}`}>
+      <div className="flex items-center gap-3 px-2 py-1.5">
+        <Icon className={`h-4 w-4 shrink-0 ${iconColor}`} />
+        <span className="text-foreground-500 text-small shrink-0 font-mono">
+          {dateStr}
+        </span>
+        <span className="text-foreground text-small min-w-0 flex-1 truncate font-mono">
+          {summary}
+        </span>
+        {sync.source === "scheduler" && (
+          <Tooltip content="Synced by the scheduler" closeDelay={0}>
+            <span className="text-tiny flex shrink-0 items-center gap-0.5 rounded bg-sky-500/15 px-1.5 py-0.5 font-mono text-sky-600 dark:bg-sky-500/20 dark:text-sky-300">
+              <ZapIcon size={12} />
+              Auto
+            </span>
+          </Tooltip>
+        )}
+      </div>
+    </div>
+  );
+}
+
+export function JobsPanel({ jobs, history, isLoading, onCancel, onDelete, onRetry }: Props) {
+  const totalCount = jobs.length + history.length;
+
   return (
     <Panel>
       <PanelHeader
         leadingIcon={<HistoryIcon size={18} />}
         badge={
-          jobs.length > 0 && (
+          totalCount > 0 && (
             <span className="text-foreground-400 font-mono text-xs">
-              ({jobs.length})
+              ({totalCount})
             </span>
           )
         }
@@ -174,7 +231,7 @@ export function JobsPanel({ jobs, isLoading, onCancel, onDelete, onRetry }: Prop
               Loading...
             </span>
           </div>
-        ) : jobs.length === 0 ? (
+        ) : totalCount === 0 ? (
           <EmptyState icon={InboxIcon} title="No syncs yet" />
         ) : (
           <div className="divide-divider flex flex-col divide-y">
@@ -186,6 +243,9 @@ export function JobsPanel({ jobs, isLoading, onCancel, onDelete, onRetry }: Prop
                 onDelete={!isActive(job.status) ? onDelete : undefined}
                 onRetry={job.status === "failed" ? onRetry : undefined}
               />
+            ))}
+            {history.map((sync) => (
+              <SyncHistoryRow key={sync.id} sync={sync} />
             ))}
           </div>
         )}

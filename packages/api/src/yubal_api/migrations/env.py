@@ -8,7 +8,10 @@ from sqlalchemy import engine_from_config, pool
 from sqlmodel import SQLModel
 
 # Import ALL models to register them with SQLModel.metadata
+from yubal_api.db.keep_list import KeepListEntry  # noqa: F401
 from yubal_api.db.subscription import Subscription  # noqa: F401
+from yubal_api.db.sync_history import SyncHistory  # noqa: F401
+from yubal_api.db.track_event import TrackEvent  # noqa: F401
 from yubal_api.settings import get_settings
 
 config = context.config

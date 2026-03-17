@@ -9,6 +9,8 @@ from dataclasses import dataclass
 
 from fastapi import Request
 
+from yubal_api.db.history_repository import HistoryRepository
+from yubal_api.db.keep_list_repository import KeepListRepository
 from yubal_api.services.gdrive_service import GDriveService
 from yubal_api.services.job_event_bus import JobEventBus
 from yubal_api.services.job_executor import JobExecutor
@@ -39,6 +41,8 @@ class Services:
     log_buffer: LogBuffer
     gdrive_service: GDriveService | None
     replaygain_scanner: ReplayGainScanner
+    history_repository: HistoryRepository
+    keep_list_repository: KeepListRepository
 
     def close(self) -> None:
         """Clean up resources. Called at application shutdown."""

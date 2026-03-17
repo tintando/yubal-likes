@@ -32,6 +32,7 @@ from yubal_api.api.routes import (
     cookies,
     drive,
     health,
+    history,
     info,
     jobs,
     logs,
@@ -39,7 +40,12 @@ from yubal_api.api.routes import (
     scheduler,
     subscriptions,
 )
-from yubal_api.db import SubscriptionRepository, create_db_engine
+from yubal_api.db import (
+    HistoryRepository,
+    KeepListRepository,
+    SubscriptionRepository,
+    create_db_engine,
+)
 from yubal_api.schemas.jobs import (
     ClearedEvent,
     CreatedEvent,
@@ -127,7 +133,11 @@ def run_migrations() -> None:
     command.upgrade(alembic_cfg, "head")
 
 
-def create_services(repository: SubscriptionRepository) -> Services:
+def create_services(
+    repository: SubscriptionRepository,
+    history_repository: HistoryRepository,
+    keep_list_repository: KeepListRepository,
+) -> Services:
     """Create all application services with proper dependency wiring.
 
     Args:
@@ -186,6 +196,8 @@ def create_services(repository: SubscriptionRepository) -> Services:
         cache_path=settings.cache_path,
         job_timeout=settings.job_timeout_seconds,
         gdrive_service=gdrive_service,
+        history_repository=history_repository,
+        keep_list_repository=keep_list_repository,
     )
 
     # Create ReplayGain scanner
@@ -214,6 +226,8 @@ def create_services(repository: SubscriptionRepository) -> Services:
         log_buffer=log_buffer,
         gdrive_service=gdrive_service,
         replaygain_scanner=replaygain_scanner,
+        history_repository=history_repository,
+        keep_list_repository=keep_list_repository,
     )
 
 
@@ -229,6 +243,7 @@ def create_api_router() -> APIRouter:
     api_router.include_router(subscriptions.router)
     api_router.include_router(scheduler.router)
     api_router.include_router(replaygain.router)
+    api_router.include_router(history.router)
     return api_router
 
 
@@ -246,9 +261,11 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     db_path = settings.db_path
     engine = create_db_engine(db_path)
 
-    # Create services with database repository
+    # Create services with database repositories
     repository = SubscriptionRepository(engine)
-    services = create_services(repository)
+    history_repository = HistoryRepository(engine)
+    keep_list_repository = KeepListRepository(engine)
+    services = create_services(repository, history_repository, keep_list_repository)
     app.state.services = services
     logger.info("Services initialized")
 
