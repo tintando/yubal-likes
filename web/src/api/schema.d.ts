@@ -118,6 +118,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/jobs/{job_id}/resolve-orphans": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Resolve Orphans */
+        post: operations["resolve_orphans_api_jobs__job_id__resolve_orphans_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/jobs/sse": {
         parameters: {
             query?: never;
@@ -536,6 +553,32 @@ export interface components {
          * @enum {string}
          */
         ContentKind: "album" | "playlist" | "track";
+        /** OrphanFile */
+        OrphanFile: {
+            /** Path */
+            path: string;
+            /** Size */
+            size: number;
+        };
+        /** OrphanDecision */
+        OrphanDecision: {
+            /** Path */
+            path: string;
+            /** Action */
+            action: "delete" | "keep" | "never_delete";
+        };
+        /** ResolveOrphansRequest */
+        ResolveOrphansRequest: {
+            decisions: components["schemas"]["OrphanDecision"][];
+        };
+        /** ResolveOrphansResponse */
+        ResolveOrphansResponse: {
+            /**
+             * Message
+             * @default Orphans resolved
+             */
+            message: string;
+        };
         /**
          * CookiesStatusResponse
          * @description Cookies status response model.
@@ -686,6 +729,8 @@ export interface components {
             content_info: components["schemas"]["ContentInfo"] | null;
             /** @default null */
             download_stats: components["schemas"]["PhaseStats"] | null;
+            /** @default null */
+            pending_orphans: components["schemas"]["OrphanFile"][] | null;
             /**
              * Created At
              * Format: date-time
@@ -727,7 +772,7 @@ export interface components {
          * @description Status of a background job.
          * @enum {string}
          */
-        JobStatus: "pending" | "fetching_info" | "downloading" | "importing" | "uploading" | "cleaning" | "completed" | "failed" | "cancelled";
+        JobStatus: "pending" | "fetching_info" | "downloading" | "importing" | "uploading" | "cleaning" | "awaiting_review" | "completed" | "failed" | "cancelled";
         /**
          * JobsResponse
          * @description Response for listing jobs.
@@ -819,7 +864,7 @@ export interface components {
              * @description Specific event type for granular tracking
              * @default null
              */
-            event_type: "track_download" | null;
+            event_type: "track_download" | "file_upload" | null;
             /**
              * Current
              * @description Current item index in progress (0-indexed)
@@ -1395,6 +1440,59 @@ export interface operations {
                 };
             };
             /** @description Cannot delete running job */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    resolve_orphans_api_jobs__job_id__resolve_orphans_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                job_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ResolveOrphansRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ResolveOrphansResponse"];
+                };
+            };
+            /** @description Job not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Job not awaiting review */
             409: {
                 headers: {
                     [name: string]: unknown;

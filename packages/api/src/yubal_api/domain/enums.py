@@ -10,6 +10,7 @@ class JobStatus(StrEnum):
     IMPORTING = "importing"  # Beets import (80-100%)
     UPLOADING = "uploading"  # Google Drive upload
     CLEANING = "cleaning"  # Orphan file cleanup
+    AWAITING_REVIEW = "awaiting_review"  # Waiting for user to review orphans
     COMPLETED = "completed"
     FAILED = "failed"
     CANCELLED = "cancelled"

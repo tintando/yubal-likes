@@ -41,7 +41,7 @@ type ProgressColor =
   | "warning"
   | "danger";
 
-const STATUS_CONFIG: Record<
+export const STATUS_CONFIG: Record<
   JobStatus,
   {
     icon: typeof ClockIcon;
@@ -85,6 +85,11 @@ const STATUS_CONFIG: Record<
     progressColor: "secondary",
     spin: true,
   },
+  awaiting_review: {
+    icon: CircleAlertIcon,
+    color: "text-warning",
+    progressColor: "warning",
+  },
   completed: {
     icon: CheckCircleIcon,
     color: "text-success",
@@ -94,7 +99,7 @@ const STATUS_CONFIG: Record<
   cancelled: { icon: XIcon, color: "text-warning", progressColor: "warning" },
 };
 
-function StatusIcon({
+export function StatusIcon({
   status,
   hasPartialFailures,
 }: {

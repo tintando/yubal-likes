@@ -3,7 +3,6 @@
 import { Footer } from "@/components/layout/footer";
 import { Header } from "@/components/layout/header";
 import { JobsPage } from "@/pages/jobs";
-import { SubscriptionsPage } from "@/pages/subscriptions";
 import { HeroUIProvider, ToastProvider } from "@heroui/react";
 import {
   createRootRoute,
@@ -56,13 +55,7 @@ const jobsRoute = createRoute({
   component: JobsPage,
 });
 
-const subscriptionsRoute = createRoute({
-  getParentRoute: () => rootRoute,
-  path: "/playlists",
-  component: SubscriptionsPage,
-});
-
-const routeTree = rootRoute.addChildren([jobsRoute, subscriptionsRoute]);
+const routeTree = rootRoute.addChildren([jobsRoute]);
 
 export const router = createRouter({ routeTree });
 

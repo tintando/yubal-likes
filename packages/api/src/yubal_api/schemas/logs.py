@@ -26,7 +26,7 @@ StatsType = Literal["extraction", "download", "upload", "replaygain", "cleanup"]
 PhaseType = Literal["extracting", "downloading", "composing", "normalizing", "uploading", "scanning", "cleaning"]
 
 # Event type discriminator for progress entries
-EventType = Literal["track_download"]
+EventType = Literal["track_download", "file_upload"]
 
 # File type discriminator for file entries
 FileType = Literal["m3u", "cover", "audio"]

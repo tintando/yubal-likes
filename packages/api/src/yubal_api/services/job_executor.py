@@ -11,9 +11,10 @@ from uuid import UUID
 from yubal import AudioCodec, CancelToken, cleanup_part_files
 
 from yubal_api.domain.enums import JobSource, JobStatus, ProgressStep
-from yubal_api.domain.job import ContentInfo, Job
+from yubal_api.domain.job import ContentInfo, Job, OrphanFile
 from yubal_api.services.cleanup_service import CleanupService
 from yubal_api.services.gdrive_service import GDriveService
+from yubal_api.services.keep_list import KeepList
 from yubal_api.services.protocols import JobExecutionStore
 from yubal_api.services.subscription_service import SubscriptionService
 from yubal_api.services.sync_service import SyncService
@@ -284,13 +285,14 @@ class JobExecutor:
                 )
 
             # Run orphan cleanup after upload, before COMPLETED
+            should_complete = True
             if result.success and not cancel_token.is_cancelled:
-                await self._run_cleanup(
+                should_complete = await self._run_cleanup(
                     job_id, cancel_token, result.content_info
                 )
 
             # Transition to COMPLETED after cleanup (or if no cleanup needed)
-            if result.success and not cancel_token.is_cancelled:
+            if result.success and not cancel_token.is_cancelled and should_complete:
                 self._job_store.transition(
                     job_id,
                     JobStatus.COMPLETED,
@@ -329,20 +331,79 @@ class JobExecutor:
         job_id: str,
         cancel_token: CancelToken,
         content_info: ContentInfo | None,
-    ) -> None:
-        """Run orphan file cleanup after sync."""
+    ) -> bool:
+        """Run orphan file scan after sync. Returns True if job should complete immediately."""
         self._job_store.transition(
             job_id, JobStatus.CLEANING, progress=0.0, content_info=content_info
         )
 
         audio_ext = {f".{self._audio_format.value}"}
         cleanup = CleanupService(self._base_path, audio_ext)
-        cleanup_result = await asyncio.to_thread(cleanup.cleanup_orphans)
-        logger.info(
-            "Cleanup: %d files deleted, %d bytes freed",
-            cleanup_result.files_deleted,
-            cleanup_result.bytes_freed,
+        orphans = await asyncio.to_thread(cleanup.find_orphans)
+
+        # Filter out keep-list entries
+        keep_list = KeepList(self._base_path / ".yubal_keep.json")
+        orphans = [o for o in orphans if not keep_list.contains(o.path)]
+
+        if orphans:
+            self._job_store.transition(
+                job_id,
+                JobStatus.AWAITING_REVIEW,
+                content_info=content_info,
+                pending_orphans=orphans,
+            )
+            return False  # Job pauses here
+
+        return True  # No orphans, can complete immediately
+
+    def resolve_orphans(
+        self,
+        job_id: str,
+        decisions: list[dict[str, str]],
+    ) -> bool:
+        """Process orphan review decisions and complete the job.
+
+        Args:
+            job_id: The job ID.
+            decisions: List of {"path": ..., "action": "delete"|"keep"|"never_delete"}.
+
+        Returns:
+            True if resolved successfully.
+        """
+        job = self._job_store.get(job_id)
+        if not job or job.status != JobStatus.AWAITING_REVIEW:
+            return False
+
+        audio_ext = {f".{self._audio_format.value}"}
+        cleanup = CleanupService(self._base_path, audio_ext)
+        keep_list = KeepList(self._base_path / ".yubal_keep.json")
+
+        to_delete: list[Path] = []
+        for decision in decisions:
+            path = decision["path"]
+            action = decision["action"]
+            if action == "delete":
+                to_delete.append(self._base_path / path)
+            elif action == "never_delete":
+                keep_list.add(path)
+
+        if to_delete:
+            result = cleanup.delete_files(to_delete)
+            logger.info(
+                "Orphan review cleanup: %d files deleted, %d bytes freed",
+                result.files_deleted,
+                result.bytes_freed,
+            )
+
+        self._job_store.transition(
+            job_id,
+            JobStatus.COMPLETED,
+            progress=PROGRESS_COMPLETE,
+            content_info=job.content_info,
+            download_stats=job.download_stats,
+            pending_orphans=None,
         )
+        return True
 
     async def _upload_to_drive(
         self,

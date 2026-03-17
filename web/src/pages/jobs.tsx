@@ -1,13 +1,17 @@
 import { startReplayGainScan } from "@/api/replaygain";
+import { getStatus } from "@/api/subscriptions";
+import type { SchedulerStatus } from "@/api/subscriptions";
 import { SubscriptionCard } from "@/features/subscriptions/subscription-card";
 import { LogsPanel } from "@/features/logs/logs-panel";
 import { JobsPanel } from "@/features/jobs/jobs-panel";
+import { OrphanReview } from "@/features/jobs/orphan-review";
 import { useJobs } from "@/features/jobs/jobs-context";
+import { useScheduleCountdown } from "@/hooks/use-schedule-countdown";
 import { useTimeAgo } from "@/hooks/use-time-ago";
 import { showErrorToast, showSuccessToast } from "@/lib/toast";
 import { Button, Tooltip } from "@heroui/react";
-import { ClockIcon, Music2Icon, RefreshCwIcon, Volume2Icon } from "lucide-react";
-import { memo, useState } from "react";
+import { ClockIcon, Music2Icon, RefreshCwIcon, TimerIcon, Volume2Icon } from "lucide-react";
+import { memo, useEffect, useState } from "react";
 
 const LIKED_SONGS_URL = "https://music.youtube.com/playlist?list=LM";
 const SYNC_MAX_ITEMS = 1000;
@@ -61,14 +65,37 @@ function SyncSection({ onSync }: { onSync: () => void }) {
   );
 }
 
-function Dashboard({ jobs }: { jobs: ReturnType<typeof useJobs>["jobs"] }) {
+function NextSyncCard({ status }: { status: SchedulerStatus | null }) {
+  const countdown = useScheduleCountdown(
+    status?.cron_expression,
+    status?.timezone,
+  );
+
+  return (
+    <SubscriptionCard>
+      <SubscriptionCard.Header title="Next sync">
+        <SubscriptionCard.Value>
+          <span className="font-mono">{countdown}</span>
+        </SubscriptionCard.Value>
+      </SubscriptionCard.Header>
+      <SubscriptionCard.Icon className="text-secondary bg-secondary/10">
+        <TimerIcon />
+      </SubscriptionCard.Icon>
+    </SubscriptionCard>
+  );
+}
+
+function Dashboard({ jobs, schedulerStatus }: {
+  jobs: ReturnType<typeof useJobs>["jobs"];
+  schedulerStatus: SchedulerStatus | null;
+}) {
   const lastCompleted = jobs.find((j) => j.status === "completed");
   const trackCount = lastCompleted?.content_info?.track_count;
   const lastSyncedAt = lastCompleted?.completed_at;
   const timeAgo = useTimeAgo(lastSyncedAt);
 
   return (
-    <div className="mb-6 grid w-full grid-cols-2 gap-4">
+    <div className="mb-6 grid w-full grid-cols-3 gap-4">
       <SubscriptionCard>
         <SubscriptionCard.Header title="Last synced">
           <SubscriptionCard.Value>
@@ -89,12 +116,18 @@ function Dashboard({ jobs }: { jobs: ReturnType<typeof useJobs>["jobs"] }) {
           <Music2Icon />
         </SubscriptionCard.Icon>
       </SubscriptionCard>
+      <NextSyncCard status={schedulerStatus} />
     </div>
   );
 }
 
 export function JobsPage() {
   const { jobs, isLoading, startJob, cancelJob, deleteJob, retryJob } = useJobs();
+  const [schedulerStatus, setSchedulerStatus] = useState<SchedulerStatus | null>(null);
+
+  useEffect(() => {
+    getStatus().then(setSchedulerStatus);
+  }, []);
 
   const handleSync = () => {
     startJob(LIKED_SONGS_URL, SYNC_MAX_ITEMS);
@@ -104,15 +137,18 @@ export function JobsPage() {
     await deleteJob(jobId);
   };
 
+  const reviewJob = jobs.find((j) => j.status === "awaiting_review");
+
   return (
     <>
       <h1 className="text-foreground mb-6 text-2xl font-bold">Sync</h1>
 
       <SyncSection onSync={handleSync} />
 
-      <Dashboard jobs={jobs} />
+      <Dashboard jobs={jobs} schedulerStatus={schedulerStatus} />
 
       <section className="flex flex-col gap-6">
+        {reviewJob && <OrphanReview job={reviewJob} />}
         <JobsPanel
           jobs={jobs}
           isLoading={isLoading}

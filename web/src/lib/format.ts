@@ -18,6 +18,17 @@ export function formatDateTime(dateString: string | null | undefined): string {
   return new Date(dateString).toLocaleString();
 }
 
+/** Short date format: "Mar 15, 2:30 PM" */
+export function formatDateShort(dateString: string | null | undefined): string {
+  if (!dateString) return "";
+  return new Date(dateString).toLocaleString(undefined, {
+    month: "short",
+    day: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+  });
+}
+
 export function formatCountdown(targetDate: Date | null): string {
   if (!targetDate) return "—";
 

@@ -9,6 +9,13 @@ from yubal import AudioCodec, ContentKind, PhaseStats
 from yubal_api.domain.enums import JobSource, JobStatus
 
 
+class OrphanFile(BaseModel):
+    """An orphaned file found during cleanup."""
+
+    path: str
+    size: int
+
+
 class ContentInfo(BaseModel):
     """Information about downloaded content (album, playlist, or track)."""
 
@@ -39,6 +46,7 @@ class Job(BaseModel):
     progress: float = 0.0
     content_info: ContentInfo | None = None
     download_stats: PhaseStats | None = None
+    pending_orphans: list[OrphanFile] | None = None
     created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
     started_at: datetime | None = None
     completed_at: datetime | None = None

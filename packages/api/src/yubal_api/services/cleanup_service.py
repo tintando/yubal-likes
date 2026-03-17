@@ -4,8 +4,10 @@ Deletes audio and LRC files not referenced by any M3U playlist.
 """
 
 import logging
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from pathlib import Path
+
+from yubal_api.domain.job import OrphanFile
 
 logger = logging.getLogger(__name__)
 
@@ -27,6 +29,72 @@ class CleanupService:
         self._audio_extensions = audio_extensions | {".lrc"}
         self._playlists_dir = base_path / "_Playlists"
 
+    def find_orphans(self) -> list[OrphanFile]:
+        """Find files not referenced by any playlist, without deleting them."""
+        logger.info(
+            "Scanning for orphaned files",
+            extra={"phase": "cleaning", "phase_num": 6},
+        )
+
+        referenced = self._collect_referenced_files()
+        if not referenced:
+            logger.info("No playlists found, skipping cleanup")
+            return []
+
+        raw_orphans = self._find_orphans(referenced)
+        if not raw_orphans:
+            logger.info("No orphaned files found")
+            return []
+
+        result = []
+        for path in raw_orphans:
+            try:
+                rel = str(path.relative_to(self._base_path))
+            except ValueError:
+                rel = str(path)
+            try:
+                size = path.stat().st_size
+            except OSError:
+                size = 0
+            result.append(OrphanFile(path=rel, size=size))
+
+        return result
+
+    def delete_files(self, paths: list[Path]) -> CleanupResult:
+        """Delete specified files and remove empty directories."""
+        total = len(paths)
+        deleted = 0
+        bytes_freed = 0
+
+        for i, path in enumerate(paths, 1):
+            try:
+                rel = path.relative_to(self._base_path)
+            except ValueError:
+                rel = path
+            try:
+                size = path.stat().st_size
+                path.unlink()
+                deleted += 1
+                bytes_freed += size
+                logger.info(
+                    "Deleted: %s", rel, extra={"current": i, "total": total}
+                )
+            except OSError as e:
+                logger.warning("Failed to delete %s: %s", rel, e)
+
+        dirs_removed = self._remove_empty_dirs()
+
+        result = CleanupResult(
+            files_deleted=deleted, bytes_freed=bytes_freed, dirs_removed=dirs_removed
+        )
+        logger.info(
+            "Cleanup complete",
+            extra={
+                "stats": {"stats_type": "cleanup", "success": result.files_deleted}
+            },
+        )
+        return result
+
     def cleanup_orphans(self) -> CleanupResult:
         """Find and delete files not referenced by any playlist."""
         logger.info(
@@ -34,30 +102,17 @@ class CleanupService:
             extra={"phase": "cleaning", "phase_num": 6},
         )
 
-        # 1. Collect all referenced files from M3U playlists
         referenced = self._collect_referenced_files()
         if not referenced:
             logger.info("No playlists found, skipping cleanup")
             return CleanupResult()
 
-        # 2. Find orphaned files
         orphans = self._find_orphans(referenced)
         if not orphans:
             logger.info("No orphaned files found")
             return CleanupResult()
 
-        # 3. Delete orphans
-        result = self._delete_files(orphans)
-
-        # 4. Remove empty directories
-        result.dirs_removed = self._remove_empty_dirs()
-
-        logger.info(
-            "Cleanup complete",
-            extra={
-                "stats": {"stats_type": "cleanup", "success": result.files_deleted}
-            },
-        )
+        result = self.delete_files(orphans)
         return result
 
     def _collect_referenced_files(self) -> set[Path]:
@@ -99,30 +154,6 @@ class CleanupService:
                 orphans.append(path)
 
         return orphans
-
-    def _delete_files(self, orphans: list[Path]) -> CleanupResult:
-        """Delete orphaned files with progress logging."""
-        total = len(orphans)
-        deleted = 0
-        bytes_freed = 0
-
-        for i, path in enumerate(orphans, 1):
-            try:
-                rel = path.relative_to(self._base_path)
-            except ValueError:
-                rel = path
-            try:
-                size = path.stat().st_size
-                path.unlink()
-                deleted += 1
-                bytes_freed += size
-                logger.info(
-                    "Deleted: %s", rel, extra={"current": i, "total": total}
-                )
-            except OSError as e:
-                logger.warning("Failed to delete %s: %s", rel, e)
-
-        return CleanupResult(files_deleted=deleted, bytes_freed=bytes_freed)
 
     def _remove_empty_dirs(self) -> int:
         """Remove empty directories bottom-up."""

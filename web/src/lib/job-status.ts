@@ -9,8 +9,8 @@ const RUNNING_STATUSES = new Set<JobStatus>([
   "cleaning",
 ]);
 
-/** Active states that indicate job is in progress (includes pending) */
-const ACTIVE_STATUSES = new Set<JobStatus>(["pending", ...RUNNING_STATUSES]);
+/** Active states that indicate job is in progress (includes pending and awaiting_review) */
+const ACTIVE_STATUSES = new Set<JobStatus>(["pending", "awaiting_review", ...RUNNING_STATUSES]);
 
 /** Check if a job status indicates the job is running (actively processing) */
 export function isRunning(status: JobStatus): boolean {

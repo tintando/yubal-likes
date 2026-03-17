@@ -74,6 +74,25 @@ class CancelJobResponse(BaseModel):
     message: Literal["Job cancelled"] = "Job cancelled"
 
 
+class OrphanDecision(BaseModel):
+    """Decision for a single orphan file."""
+
+    path: str
+    action: Literal["delete", "keep", "never_delete"]
+
+
+class ResolveOrphansRequest(BaseModel):
+    """Request to resolve orphan review."""
+
+    decisions: list[OrphanDecision]
+
+
+class ResolveOrphansResponse(BaseModel):
+    """Response when orphans are resolved."""
+
+    message: Literal["Orphans resolved"] = "Orphans resolved"
+
+
 # SSE Event schemas
 
 

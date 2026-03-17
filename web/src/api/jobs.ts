@@ -74,3 +74,15 @@ export async function cancelJob(jobId: string): Promise<void> {
 
   if (error) throw new Error("Failed to cancel job");
 }
+
+export async function resolveOrphans(
+  jobId: string,
+  decisions: { path: string; action: "delete" | "keep" | "never_delete" }[],
+): Promise<boolean> {
+  const { error } = await api.POST("/jobs/{job_id}/resolve-orphans", {
+    params: { path: { job_id: jobId } },
+    body: { decisions },
+  });
+
+  return !error;
+}

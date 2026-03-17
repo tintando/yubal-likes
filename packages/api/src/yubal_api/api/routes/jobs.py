@@ -28,6 +28,8 @@ from yubal_api.schemas.jobs import (
     CreateJobRequest,
     JobCreatedResponse,
     JobsResponse,
+    ResolveOrphansRequest,
+    ResolveOrphansResponse,
     SnapshotEvent,
 )
 from yubal_api.services.job_store import JobStore
@@ -127,6 +129,33 @@ async def delete_job(job_id: str, job_store: JobStoreDep) -> None:
         raise JobConflictError("Cannot delete a running or queued job", job_id=job_id)
 
     job_store.delete(job_id)
+
+
+@router.post(
+    "/{job_id}/resolve-orphans",
+    responses={
+        404: {"model": ErrorResponse, "description": "Job not found"},
+        409: {"model": ErrorResponse, "description": "Job not awaiting review"},
+    },
+)
+async def resolve_orphans(
+    job_id: str,
+    request: ResolveOrphansRequest,
+    job_store: JobStoreDep,
+    job_executor: JobExecutorDep,
+) -> ResolveOrphansResponse:
+    """Resolve orphan file review and complete the job."""
+    job = _get_job_or_raise(job_store, job_id)
+
+    if job.status != "awaiting_review":
+        raise JobConflictError("Job is not awaiting review", job_id=job_id)
+
+    decisions = [{"path": d.path, "action": d.action} for d in request.decisions]
+    success = job_executor.resolve_orphans(job_id, decisions)
+    if not success:
+        raise JobConflictError("Failed to resolve orphans", job_id=job_id)
+
+    return ResolveOrphansResponse()
 
 
 HEARTBEAT_INTERVAL = 30.0

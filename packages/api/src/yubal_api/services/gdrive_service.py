@@ -2,7 +2,7 @@
 
 import logging
 from collections.abc import Callable
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from pathlib import Path
 
 from google.auth.transport.requests import Request
@@ -45,6 +45,7 @@ class GDriveService:
         self._token_file = token_file
         self._root_folder_id = root_folder_id
         self._folder_cache: dict[str, str] = {}
+        self._files_cache: dict[str, dict[str, int]] = {}
 
     def _build_service(self):
         credentials = Credentials.from_authorized_user_file(
@@ -86,6 +87,9 @@ class GDriveService:
     ) -> GDriveUploadResult:
         """Upload a local directory tree to Google Drive, preserving folder structure.
 
+        Uses batch folder listing to check file existence in-memory instead of
+        per-file API calls.
+
         Args:
             local_path: Root of the local directory to upload.
             cancel_token: Token for cooperative cancellation.
@@ -96,6 +100,7 @@ class GDriveService:
         """
         service = self._build_service()
         self._folder_cache.clear()
+        self._files_cache.clear()
 
         # Collect all files to upload
         files = sorted(f for f in Path(local_path).rglob("*") if f.is_file())
@@ -110,6 +115,14 @@ class GDriveService:
             extra={"phase": "uploading", "phase_num": 5},
         )
 
+        # Prefetch the entire remote tree so skip checks are instant
+        logger.info("Indexing remote files...")
+        self._prefetch_remote_tree(service, self._root_folder_id, "")
+        logger.info(
+            "Indexed %d remote folders",
+            len(self._files_cache),
+        )
+
         uploaded = 0
         skipped = 0
         bytes_uploaded = 0
@@ -121,19 +134,41 @@ class GDriveService:
 
             rel = file_path.relative_to(local_path)
             parent_id = self._ensure_folder_chain(service, rel.parent)
+            local_size = file_path.stat().st_size
 
-            if self._file_exists(service, file_path.name, parent_id, file_path.stat().st_size):
+            # Folder contents already prefetched; fallback for newly created folders
+            if parent_id not in self._files_cache:
+                self._files_cache[parent_id] = self._list_folder_files(
+                    service, parent_id
+                )
+
+            remote_size = self._files_cache[parent_id].get(file_path.name)
+            if remote_size is not None and remote_size == local_size:
                 skipped += 1
                 logger.info(
-                    "Skipped (exists): %s", rel, extra={"current": i, "total": total}
+                    "Skipped (exists): %s",
+                    rel,
+                    extra={
+                        "current": i,
+                        "total": total,
+                        "event_type": "file_upload",
+                    },
                 )
             else:
                 logger.info(
-                    "Uploading: %s", rel, extra={"current": i, "total": total}
+                    "Uploading: %s",
+                    rel,
+                    extra={
+                        "current": i,
+                        "total": total,
+                        "event_type": "file_upload",
+                    },
                 )
                 self._upload_file(service, file_path, parent_id)
                 uploaded += 1
-                bytes_uploaded += file_path.stat().st_size
+                bytes_uploaded += local_size
+                # Update cache after upload
+                self._files_cache[parent_id][file_path.name] = local_size
 
             if on_progress:
                 on_progress(i + 1, total, file_path.name)
@@ -179,6 +214,109 @@ class GDriveService:
 
         return current_id
 
+    def _prefetch_remote_tree(self, service, root_id: str, _path_prefix: str) -> None:
+        """Fetch all remote folders and files in two flat queries, populating caches.
+
+        Uses the drive.file scope property: all visible items were created by
+        this app, so a scopeless 'trashed = false' query returns only our files.
+        This replaces N recursive per-folder API calls with ~2-4 paginated calls.
+        """
+        # 1. Fetch ALL folders to build id->path mapping
+        folders_by_id: dict[str, tuple[str, str | None]] = {}  # id -> (name, parent_id)
+        page_token = None
+        while True:
+            resp = (
+                service.files()
+                .list(
+                    q=f"mimeType = '{FOLDER_MIME}' and trashed = false",
+                    fields="nextPageToken, files(id, name, parents)",
+                    pageSize=1000,
+                    pageToken=page_token,
+                )
+                .execute()
+            )
+            for f in resp.get("files", []):
+                parent = f.get("parents", [None])[0]
+                folders_by_id[f["id"]] = (f["name"], parent)
+            page_token = resp.get("nextPageToken")
+            if not page_token:
+                break
+
+        # Build folder_id -> relative path (only folders under our root)
+        folder_paths: dict[str, str] = {root_id: ""}
+
+        def resolve_path(fid: str) -> str | None:
+            if fid in folder_paths:
+                return folder_paths[fid]
+            if fid not in folders_by_id:
+                return None
+            name, parent_id = folders_by_id[fid]
+            if parent_id is None:
+                return None
+            parent_path = resolve_path(parent_id)
+            if parent_path is None:
+                return None
+            path = f"{parent_path}/{name}" if parent_path else name
+            folder_paths[fid] = path
+            return path
+
+        for fid in folders_by_id:
+            resolve_path(fid)
+
+        # Populate _folder_cache with resolved paths
+        for fid, path in folder_paths.items():
+            if fid != root_id and path:
+                self._folder_cache[path] = fid
+            # Initialize empty files map for every known folder
+            self._files_cache[fid] = {}
+
+        # 2. Fetch ALL non-folder files in one flat query
+        page_token = None
+        while True:
+            resp = (
+                service.files()
+                .list(
+                    q=f"mimeType != '{FOLDER_MIME}' and trashed = false",
+                    fields="nextPageToken, files(name, size, parents)",
+                    pageSize=1000,
+                    pageToken=page_token,
+                )
+                .execute()
+            )
+            for f in resp.get("files", []):
+                parent = f.get("parents", [None])[0]
+                if parent and parent in folder_paths:
+                    if parent not in self._files_cache:
+                        self._files_cache[parent] = {}
+                    self._files_cache[parent][f["name"]] = int(f.get("size", 0))
+            page_token = resp.get("nextPageToken")
+            if not page_token:
+                break
+
+    @staticmethod
+    def _list_folder_files(service, parent_id: str) -> dict[str, int]:
+        """List all files in a folder, returning {name: size} mapping."""
+        files_map: dict[str, int] = {}
+        query = f"'{parent_id}' in parents and mimeType != '{FOLDER_MIME}' and trashed = false"
+        page_token = None
+        while True:
+            resp = (
+                service.files()
+                .list(
+                    q=query,
+                    fields="nextPageToken, files(name, size)",
+                    pageSize=1000,
+                    pageToken=page_token,
+                )
+                .execute()
+            )
+            for f in resp.get("files", []):
+                files_map[f["name"]] = int(f.get("size", 0))
+            page_token = resp.get("nextPageToken")
+            if not page_token:
+                break
+        return files_map
+
     @staticmethod
     def _find_folder(service, name: str, parent_id: str) -> str | None:
         """Find a folder by name under a parent."""
@@ -201,23 +339,6 @@ class GDriveService:
         }
         folder = service.files().create(body=metadata, fields="id").execute()
         return folder["id"]
-
-    @staticmethod
-    def _file_exists(service, name: str, parent_id: str, local_size: int) -> bool:
-        """Check if a file with the same name and size exists in the parent folder."""
-        escaped = name.replace("\\", "\\\\").replace("'", "\\'")
-        query = (
-            f"name = '{escaped}' and '{parent_id}' in parents "
-            f"and mimeType != '{FOLDER_MIME}' and trashed = false"
-        )
-        resp = (
-            service.files().list(q=query, fields="files(id,size)", pageSize=1).execute()
-        )
-        files = resp.get("files", [])
-        if not files:
-            return False
-        remote_size = int(files[0].get("size", 0))
-        return remote_size == local_size
 
     @staticmethod
     def _upload_file(service, file_path: Path, parent_id: str) -> str:

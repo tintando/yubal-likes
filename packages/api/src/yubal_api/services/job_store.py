@@ -11,7 +11,7 @@ from uuid import UUID
 from yubal import AudioCodec, PhaseStats
 
 from yubal_api.domain.enums import JobSource, JobStatus
-from yubal_api.domain.job import ContentInfo, Job
+from yubal_api.domain.job import ContentInfo, Job, OrphanFile
 from yubal_api.domain.types import Clock, IdGenerator
 from yubal_api.services.job_event_bus import JobEventBus
 
@@ -178,6 +178,7 @@ class JobStore:
         content_info: ContentInfo | None = None,
         download_stats: PhaseStats | None = None,
         started_at: datetime | None = None,
+        pending_orphans: list[OrphanFile] | None = ...,
     ) -> Job | None:
         """Update job status and related fields atomically.
 
@@ -206,6 +207,7 @@ class JobStore:
                 content_info=content_info,
                 download_stats=download_stats,
                 started_at=started_at,
+                pending_orphans=pending_orphans,
             )
             self._event_bus.emit_updated(job)
             return job
@@ -355,6 +357,7 @@ class JobStore:
         download_stats: PhaseStats | None = None,
         started_at: datetime | None = None,
         completed_at: datetime | None = None,
+        pending_orphans: list[OrphanFile] | None = ...,
     ) -> None:
         """Apply field updates to a job.
 
@@ -372,6 +375,7 @@ class JobStore:
             download_stats: New download statistics.
             started_at: New start timestamp.
             completed_at: New completion timestamp.
+            pending_orphans: Orphan files awaiting review (None clears, ... means no change).
         """
         if status is not None:
             job.status = status
@@ -385,6 +389,8 @@ class JobStore:
             job.started_at = started_at
         if completed_at is not None:
             job.completed_at = completed_at
+        if pending_orphans is not ...:
+            job.pending_orphans = pending_orphans
 
         # Auto-set completion timestamp when status becomes finished
         # Note: Do NOT clear _active_job_id here - the executor is responsible

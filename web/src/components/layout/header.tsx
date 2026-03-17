@@ -1,4 +1,3 @@
-import { listSubscriptions } from "@/api/subscriptions";
 import { AnimatedThemeToggler } from "@/components/magicui/animated-theme-toggler";
 import { CookieDropdown } from "@/features/cookies/cookie-dropdown";
 import { useCookies } from "@/features/cookies/use-cookies";
@@ -8,7 +7,6 @@ import { useJobs } from "@/features/jobs/jobs-context";
 import { useVersionCheck } from "@/hooks/use-version-check";
 import {
   Button,
-  Chip,
   Link as HeroUILink,
   Navbar,
   NavbarBrand,
@@ -18,26 +16,16 @@ import {
   NavbarMenuItem,
   NavbarMenuToggle,
 } from "@heroui/react";
-import { Link, useRouterState } from "@tanstack/react-router";
+import { Link } from "@tanstack/react-router";
 import {
   Disc3Icon,
-  DownloadIcon,
-  ListMusicIcon,
   RocketIcon,
   StarIcon,
 } from "lucide-react";
-import { useEffect, useState } from "react";
-
-const navItems = [
-  { label: "Downloads", startIcon: DownloadIcon, href: "/" },
-  { label: "My playlists", startIcon: ListMusicIcon, href: "/playlists" },
-];
+import { useState } from "react";
 
 export function Header() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const [subscriptionCount, setSubscriptionCount] = useState(0);
-  const routerState = useRouterState();
-  const currentPath = routerState.location.pathname;
   const {
     cookiesConfigured,
     isUploading,
@@ -59,10 +47,6 @@ export function Header() {
   } = useDrive();
   const { data: versionInfo } = useVersionCheck();
   const { hasActiveJobs } = useJobs();
-
-  useEffect(() => {
-    listSubscriptions().then((subs) => setSubscriptionCount(subs.length));
-  }, []);
 
   return (
     <Navbar
@@ -88,39 +72,6 @@ export function Header() {
           <p className="text-foreground ml-2 text-xl font-bold">yubal</p>
         </Link>
       </NavbarBrand>
-
-      {/* Desktop navigation */}
-      <NavbarContent justify="start" className="hidden gap-2 sm:flex">
-        {navItems.map((item) => (
-          <NavbarItem
-            key={item.href}
-            className="group"
-            isActive={currentPath === item.href}
-          >
-            <Link
-              to={item.href}
-              className="text-foreground-400 text-small group-data-[active=true]:text-foreground tap-highlight-transparent active:opacity-disabled inline-flex items-center gap-2 rounded-lg px-3 py-1.5 font-medium hover:opacity-80"
-            >
-              <item.startIcon className="h-4 w-4" />
-              {item.label}
-              {item.href === "/playlists" && subscriptionCount > 0 && (
-                <Chip
-                  size="sm"
-                  variant="flat"
-                  radius="sm"
-                  className="font-mono"
-                  classNames={{
-                    content:
-                      "text-foreground-400 text-xs group-data-[active=true]:text-foreground",
-                  }}
-                >
-                  {subscriptionCount}
-                </Chip>
-              )}
-            </Link>
-          </NavbarItem>
-        ))}
-      </NavbarContent>
 
       {/* Actions */}
       <NavbarContent className="items-center gap-2" justify="end">
@@ -192,22 +143,6 @@ export function Header() {
 
       {/* Mobile menu */}
       <NavbarMenu>
-        {navItems.map((item) => (
-          <NavbarMenuItem key={item.href} isActive={currentPath === item.href}>
-            <Link
-              to={item.href}
-              onClick={() => setIsMenuOpen(false)}
-              className={`flex w-full items-center gap-2 text-lg ${currentPath === item.href ? "text-primary" : "text-foreground"}`}
-            >
-              {item.label}
-              {item.href === "/playlists" && subscriptionCount > 0 && (
-                <Chip size="sm" variant="flat" color="primary">
-                  {subscriptionCount}
-                </Chip>
-              )}
-            </Link>
-          </NavbarMenuItem>
-        ))}
         <NavbarMenuItem>
           <CookieDropdown
             variant="mobile"

@@ -3,6 +3,7 @@ import {
   AlertTriangleIcon,
   ArrowDownIcon,
   ArrowRightIcon,
+  ArrowUpIcon,
   CheckIcon,
   PaperclipIcon,
   XIcon,
@@ -206,16 +207,26 @@ function ProgressLog({
   current,
   total,
   message,
-  isDownload,
+  eventType,
 }: {
   current: number;
   total: number;
   message: string;
-  isDownload: boolean;
+  eventType: string | null;
 }) {
+  const isSkipped = message.startsWith("Skipped");
+
   return (
     <div className="flex items-center gap-1">
-      {isDownload && <ArrowDownIcon className={`${ICON_CLASS} text-primary`} />}
+      {eventType === "track_download" && !isSkipped && (
+        <ArrowDownIcon className={`${ICON_CLASS} text-primary`} />
+      )}
+      {eventType === "file_upload" && !isSkipped && (
+        <ArrowUpIcon className={`${ICON_CLASS} text-primary`} />
+      )}
+      {isSkipped && (
+        <ArrowRightIcon className={`${ICON_CLASS} text-secondary`} />
+      )}
       <span className="text-foreground-400">
         [{current}/{total}]
       </span>
@@ -335,7 +346,7 @@ export function LogLine({ entry }: { entry: LogEntry }) {
           current={entry.current ?? 0}
           total={entry.total ?? 0}
           message={entry.message}
-          isDownload={entry.event_type === "track_download"}
+          eventType={entry.event_type ?? null}
         />
       );
 

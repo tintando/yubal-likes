@@ -8,7 +8,7 @@ from yubal import AudioCodec, PhaseStats
 
 from yubal_api.db.subscription import Subscription, SubscriptionFields, SubscriptionType
 from yubal_api.domain.enums import JobSource, JobStatus
-from yubal_api.domain.job import ContentInfo, Job
+from yubal_api.domain.job import ContentInfo, Job, OrphanFile
 
 
 class JobExecutionStore(Protocol):
@@ -35,6 +35,10 @@ class JobExecutionStore(Protocol):
         """
         ...
 
+    def get(self, job_id: str) -> Job | None:
+        """Get a job by ID."""
+        ...
+
     def transition(
         self,
         job_id: str,
@@ -44,6 +48,7 @@ class JobExecutionStore(Protocol):
         content_info: ContentInfo | None = None,
         download_stats: PhaseStats | None = None,
         started_at: datetime | None = None,
+        pending_orphans: list[OrphanFile] | None = ...,
     ) -> Job | None:
         """Update job status atomically."""
         ...
