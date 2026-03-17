@@ -41,3 +41,4 @@ class JobSource(StrEnum):
 
     MANUAL = "manual"
     SCHEDULER = "scheduler"
+    IMPORT = "import"

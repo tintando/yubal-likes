@@ -125,6 +125,42 @@ def get_cover_cache_size() -> int:
     return len(_default_cache)
 
 
+def crop_to_square(data: bytes) -> bytes:
+    """Center-crop an image to 1:1 aspect ratio.
+
+    Used to crop 16:9 YouTube video thumbnails to square for embedding
+    in audio files. If already square (±1px tolerance), returns original
+    bytes to avoid unnecessary re-encoding.
+
+    Args:
+        data: Image bytes (JPEG or PNG).
+
+    Returns:
+        Square-cropped image as JPEG bytes.
+    """
+    from io import BytesIO
+
+    from PIL import Image as PILImage
+
+    img = PILImage.open(BytesIO(data))
+    w, h = img.size
+
+    # Already square (±1px tolerance) — return original
+    if abs(w - h) <= 1:
+        return data
+
+    # Center-crop to square
+    size = min(w, h)
+    left = (w - size) // 2
+    top = (h - size) // 2
+    img = img.crop((left, top, left + size, top + size))
+
+    # Save as JPEG
+    buf = BytesIO()
+    img.convert("RGB").save(buf, "JPEG", quality=95)
+    return buf.getvalue()
+
+
 def write_playlist_cover(
     base_path: Path,
     playlist_name: str,

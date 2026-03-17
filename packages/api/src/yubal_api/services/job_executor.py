@@ -8,6 +8,8 @@ from pathlib import Path
 from typing import Any
 from uuid import UUID
 
+import shutil
+
 from yubal import AudioCodec, CancelToken, cleanup_part_files
 
 from yubal_api.db.history_repository import HistoryRepository
@@ -137,6 +139,42 @@ class JobExecutor:
             self.start_job(job)
 
         return job
+
+    def create_and_start_import_job(
+        self,
+        file_paths: list[Path],
+    ) -> Job | None:
+        """Create an import job for local audio files.
+
+        Args:
+            file_paths: Paths to saved audio files in the temp directory.
+
+        Returns:
+            The created Job, or None if queue is full.
+        """
+        count = len(file_paths)
+        result = self._job_store.create(
+            f"import://{count}-files",
+            self._audio_format,
+            None,
+            JobSource.IMPORT,
+        )
+        if result is None:
+            return None
+
+        job, should_start = result
+        if should_start:
+            self._start_import_job(job, file_paths)
+        return job
+
+    def _start_import_job(self, job: Job, file_paths: list[Path]) -> None:
+        """Start an import job as a background task."""
+        task = asyncio.create_task(
+            self._run_import_job(job.id, file_paths),
+            name=f"import-{job.id[:8]}",
+        )
+        self._background_tasks.add(task)
+        task.add_done_callback(self._background_tasks.discard)
 
     def start_job(self, job: Job) -> None:
         """Start a job as a background task.
@@ -365,6 +403,109 @@ class JobExecutor:
 
             # Release active job slot AFTER cleanup, then start next
             # This ensures no concurrent downloads
+            self._job_store.release_active(job_id)
+            self._start_next_pending()
+
+    async def _run_import_job(
+        self,
+        job_id: str,
+        file_paths: list[Path],
+    ) -> None:
+        """Background task that runs the file import operation."""
+        cancel_token = CancelToken()
+        self._cancel_tokens[job_id] = cancel_token
+        started_at = datetime.now(UTC)
+        tmp_dir = file_paths[0].parent if file_paths else None
+
+        try:
+            if cancel_token.is_cancelled:
+                return
+
+            async with asyncio.timeout(self._job_timeout):
+                self._job_store.transition(
+                    job_id,
+                    JobStatus.DOWNLOADING,
+                    started_at=started_at,
+                    content_info=ContentInfo(
+                        title=f"Import ({len(file_paths)} files)",
+                        artist="Local",
+                        track_count=len(file_paths),
+                    ),
+                )
+
+                loop = asyncio.get_running_loop()
+
+                def on_progress(current: int, total: int, title: str) -> None:
+                    if cancel_token.is_cancelled:
+                        return
+                    progress = (current / total * 100.0) if total > 0 else 0.0
+                    loop.call_soon_threadsafe(
+                        partial(
+                            self._job_store.transition,
+                            job_id,
+                            JobStatus.DOWNLOADING,
+                            progress=progress,
+                        )
+                    )
+
+                from yubal.client import YTMusicClient
+                from yubal.services.import_service import FileImportService
+
+                client = YTMusicClient(cookies_path=self._cookies_path)
+                import_service = FileImportService(
+                    client=client,
+                    base_path=self._base_path,
+                    ascii_filenames=self._ascii_filenames,
+                )
+
+                result = await asyncio.to_thread(
+                    import_service.import_files,
+                    file_paths,
+                    on_progress,
+                    cancel_token,
+                )
+
+                if cancel_token.is_cancelled:
+                    pass
+                else:
+                    from yubal.models.results import PhaseStats
+
+                    stats = PhaseStats(
+                        success=result.matched + result.unmatched,
+                        failed=result.failed,
+                        skipped=0,
+                    )
+                    self._job_store.transition(
+                        job_id,
+                        JobStatus.COMPLETED,
+                        progress=PROGRESS_COMPLETE,
+                        download_stats=stats,
+                        content_info=ContentInfo(
+                            title=f"Import ({len(file_paths)} files)",
+                            artist="Local",
+                            track_count=len(file_paths),
+                        ),
+                    )
+
+        except TimeoutError:
+            logger.warning(
+                "Import job %s timed out after %d seconds",
+                job_id[:8],
+                self._job_timeout,
+            )
+            cancel_token.cancel()
+            self._job_store.transition(job_id, JobStatus.FAILED)
+
+        except Exception as e:
+            logger.exception("Import job %s failed: %s", job_id[:8], e)
+            self._job_store.transition(job_id, JobStatus.FAILED)
+
+        finally:
+            # Clean up temp directory
+            if tmp_dir and tmp_dir.exists():
+                shutil.rmtree(tmp_dir, ignore_errors=True)
+
+            self._cancel_tokens.pop(job_id, None)
             self._job_store.release_active(job_id)
             self._start_next_pending()
 

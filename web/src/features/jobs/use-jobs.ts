@@ -6,6 +6,7 @@ import {
   type Job,
   type JobEvent,
 } from "@/api/jobs";
+import { importFiles as importFilesApi } from "@/api/imports";
 import { isActive } from "@/lib/job-status";
 import { showErrorToast } from "@/lib/toast";
 
@@ -134,6 +135,13 @@ export function useJobsState() {
     [jobs],
   );
 
+  const importFiles = useCallback(async (files: File[]) => {
+    const result = await importFilesApi(files);
+    if (!result.success) {
+      showErrorToast("Import failed", result.error);
+    }
+  }, []);
+
   const hasActiveJobs = jobs.some((j) => isActive(j.status));
 
   return {
@@ -145,6 +153,7 @@ export function useJobsState() {
     cancelJob,
     deleteJob,
     retryJob,
+    importFiles,
   };
 }
 

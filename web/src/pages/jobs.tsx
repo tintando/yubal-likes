@@ -11,8 +11,8 @@ import { useScheduleCountdown } from "@/hooks/use-schedule-countdown";
 import { useTimeAgo } from "@/hooks/use-time-ago";
 import { showErrorToast, showSuccessToast } from "@/lib/toast";
 import { Button, Tooltip } from "@heroui/react";
-import { ClockIcon, Music2Icon, RefreshCwIcon, TimerIcon, Volume2Icon } from "lucide-react";
-import { memo, useEffect, useState } from "react";
+import { ClockIcon, Music2Icon, RefreshCwIcon, TimerIcon, UploadIcon, Volume2Icon } from "lucide-react";
+import { memo, useEffect, useRef, useState } from "react";
 
 const LIKED_SONGS_URL = "https://music.youtube.com/playlist?list=LM";
 const SYNC_MAX_ITEMS = 1000;
@@ -49,7 +49,18 @@ const ReplayGainButton = memo(function ReplayGainButton() {
   );
 });
 
-function SyncSection({ onSync }: { onSync: () => void }) {
+function SyncSection({ onSync, onImport }: { onSync: () => void; onImport: (files: File[]) => void }) {
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (files && files.length > 0) {
+      onImport(Array.from(files));
+    }
+    // Reset so the same files can be selected again
+    e.target.value = "";
+  };
+
   return (
     <section className="mb-8 flex gap-2">
       <Button
@@ -61,6 +72,22 @@ function SyncSection({ onSync }: { onSync: () => void }) {
       >
         Sync Now
       </Button>
+      <Button
+        radius="lg"
+        variant="flat"
+        onPress={() => fileInputRef.current?.click()}
+        startContent={<UploadIcon className="h-4 w-4" />}
+      >
+        Import
+      </Button>
+      <input
+        ref={fileInputRef}
+        type="file"
+        multiple
+        accept=".mp3,.m4a,.flac,.opus,.ogg"
+        className="hidden"
+        onChange={handleFileChange}
+      />
       <ReplayGainButton />
     </section>
   );
@@ -125,7 +152,7 @@ function Dashboard({ jobs, schedulerStatus, lastSync }: {
 }
 
 export function JobsPage() {
-  const { jobs, isLoading, startJob, cancelJob, deleteJob, retryJob } = useJobs();
+  const { jobs, isLoading, startJob, cancelJob, deleteJob, retryJob, importFiles } = useJobs();
   const [schedulerStatus, setSchedulerStatus] = useState<SchedulerStatus | null>(null);
   const [lastSync, setLastSync] = useState<SyncHistory | null>(null);
   const [syncHistory, setSyncHistory] = useState<SyncHistory[]>([]);
@@ -152,7 +179,7 @@ export function JobsPage() {
     <>
       <h1 className="text-foreground mb-6 text-2xl font-bold">Sync</h1>
 
-      <SyncSection onSync={handleSync} />
+      <SyncSection onSync={handleSync} onImport={importFiles} />
 
       <Dashboard jobs={jobs} schedulerStatus={schedulerStatus} lastSync={lastSync} />
 

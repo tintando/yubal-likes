@@ -11,6 +11,7 @@ from yubal.models.enums import MatchResult, SkipReason, VideoType
 from yubal.models.track import TrackMetadata
 from yubal.models.ytmusic import Album, Artist, Playlist, SearchResult, Thumbnail
 from yubal.services import MetadataExtractorService
+from yubal.services.cache import ExtractionCache
 from yubal.services.extractor import (
     _format_artists,
     _get_square_thumbnail,
@@ -22,9 +23,14 @@ def extract_all(
     service: MetadataExtractorService,
     url: str,
     max_items: int | None = None,
+    cache: "ExtractionCache | None" = None,
 ) -> list[TrackMetadata]:
     """Collect all extracted tracks into a list (test convenience helper)."""
-    return [p.track for p in service.extract(url, max_items=max_items) if p.track]
+    return [
+        p.track
+        for p in service.extract(url, max_items=max_items, cache=cache)
+        if p.track
+    ]
 
 
 class TestMetadataExtractorService:
@@ -1803,3 +1809,94 @@ class TestUGCDownload:
         assert tracks[0].video_type == VideoType.ATV
         assert tracks[1].match_result == MatchResult.UNOFFICIAL
         assert tracks[1].video_type == VideoType.UGC
+
+
+class TestUnmatchedCacheIntegration:
+    """Tests for unmatched cache integration in extraction pipeline."""
+
+    def _make_no_album_playlist(self) -> Playlist:
+        return Playlist.model_validate(
+            {
+                "tracks": [
+                    {
+                        "videoId": "v1",
+                        "videoType": "MUSIC_VIDEO_TYPE_OMV",
+                        "title": "Unknown Song",
+                        "artists": [{"name": "Unknown Artist"}],
+                        "thumbnails": [
+                            {"url": "https://t.jpg", "width": 120, "height": 90}
+                        ],
+                        "duration_seconds": 180,
+                    }
+                ]
+            }
+        )
+
+    def test_search_skipped_when_cached_unmatched(self, tmp_path) -> None:
+        """Should skip album search when track is cached as unmatched."""
+        playlist = self._make_no_album_playlist()
+        mock = MockYTMusicClient(playlist=playlist, album=None, search_results=[])
+
+        cache = ExtractionCache(tmp_path)
+        with cache:
+            # Pre-populate unmatched cache
+            cache.add_unmatched("v1", VideoType.OMV.value)
+
+            service = MetadataExtractorService(mock)
+            tracks = extract_all(
+                service,
+                "https://music.youtube.com/playlist?list=PLtest",
+                cache=cache,
+            )
+
+        assert len(tracks) == 1
+        assert tracks[0].match_result == MatchResult.UNMATCHED
+        # No search should have been made
+        assert mock.search_songs_calls == []
+
+    def test_cache_populated_after_failed_search(self, tmp_path) -> None:
+        """Should add to unmatched cache when album search returns no match."""
+        playlist = self._make_no_album_playlist()
+        mock = MockYTMusicClient(playlist=playlist, album=None, search_results=[])
+
+        cache = ExtractionCache(tmp_path)
+        with cache:
+            service = MetadataExtractorService(mock)
+            tracks = extract_all(
+                service,
+                "https://music.youtube.com/playlist?list=PLtest",
+                cache=cache,
+            )
+
+            assert len(tracks) == 1
+            assert tracks[0].match_result == MatchResult.UNMATCHED
+            # Search was made
+            assert len(mock.search_songs_calls) == 1
+            # Track should now be in unmatched cache
+            assert cache.is_unmatched("v1") is True
+
+    def test_second_sync_skips_search(self, tmp_path) -> None:
+        """Second sync should skip search for previously unmatched tracks."""
+        playlist = self._make_no_album_playlist()
+        mock = MockYTMusicClient(playlist=playlist, album=None, search_results=[])
+
+        cache = ExtractionCache(tmp_path)
+        with cache:
+            service = MetadataExtractorService(mock)
+
+            # First sync: search happens
+            extract_all(
+                service,
+                "https://music.youtube.com/playlist?list=PLtest",
+                cache=cache,
+            )
+            assert len(mock.search_songs_calls) == 1
+
+            # Second sync: search skipped
+            extract_all(
+                service,
+                "https://music.youtube.com/playlist?list=PLtest",
+                cache=cache,
+            )
+            # Still only 1 search call total
+            assert len(mock.search_songs_calls) == 1

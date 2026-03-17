@@ -253,7 +253,7 @@ class MetadataExtractorService:
 
             # Slow path: full extraction with API calls
             try:
-                metadata, skip_reason = self._extract_single_track(track)
+                metadata, skip_reason = self._extract_single_track(track, cache)
                 self._check_cancellation(cancel_token)
             except CancellationError:
                 raise
@@ -515,7 +515,9 @@ class MetadataExtractorService:
     # ============================================================================
 
     def _extract_single_track(
-        self, track: PlaylistTrack
+        self,
+        track: PlaylistTrack,
+        cache: ExtractionCache | None = None,
     ) -> tuple[TrackMetadata | None, SkipReason | None]:
         """Extract and enrich metadata for a single track.
 
@@ -579,8 +581,22 @@ class MetadataExtractorService:
 
         # For tracks without album, search for album info
         if not album_id:
+            # Fast path: skip search if previously determined unmatched
+            if cache is not None and cache.is_unmatched(track.video_id):
+                logger.debug(
+                    "Skipping search for '%s' (cached as unmatched)", track.title
+                )
+                metadata = self._create_fallback_metadata(
+                    track, video_type, match_result=MatchResult.UNMATCHED
+                )
+                assert metadata is not None  # video_type validated above
+                return metadata, None
+
             match self._search_for_album(track):
                 case None:
+                    # Cache as unmatched for future syncs
+                    if cache is not None:
+                        cache.add_unmatched(track.video_id, video_type.value)
                     # Download as unmatched instead of skipping
                     metadata = self._create_fallback_metadata(
                         track, video_type, match_result=MatchResult.UNMATCHED

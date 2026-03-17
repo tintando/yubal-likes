@@ -8,6 +8,7 @@ from yubal.utils.cleanup import cleanup_part_files
 from yubal.utils.cookies import cookies_to_ytmusic_auth, is_authenticated_cookies
 from yubal.utils.cover import (
     clear_cover_cache,
+    crop_to_square,
     fetch_cover,
     get_cover_cache_size,
     write_playlist_cover,
@@ -24,6 +25,7 @@ __all__ = [
     "clean_filename",
     "cleanup_part_files",
     "clear_cover_cache",
+    "crop_to_square",
     "cookies_to_ytmusic_auth",
     "fetch_cover",
     "format_playlist_filename",

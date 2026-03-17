@@ -1,17 +1,20 @@
-"""Tests for cover art fetching and playlist cover writing."""
+"""Tests for cover art fetching, cropping, and playlist cover writing."""
 
 from collections.abc import Callable
 from email.message import Message
+from io import BytesIO
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 from urllib.error import HTTPError, URLError
 
 import pytest
+from PIL import Image as PILImage
 from yubal.lib.m3u import write_m3u
 from yubal.models.enums import VideoType
 from yubal.models.track import TrackMetadata
 from yubal.utils.cover import (
     clear_cover_cache,
+    crop_to_square,
     fetch_cover,
     get_cover_cache_size,
     write_playlist_cover,
@@ -286,3 +289,54 @@ class TestWritePlaylistCover:
         assert cover_path2.exists()
         assert "abc123" in cover_path1.name
         assert "xyz789" in cover_path2.name
+
+
+def _make_image_bytes(width: int, height: int) -> bytes:
+    """Create a test JPEG image of given dimensions."""
+    img = PILImage.new("RGB", (width, height), color="red")
+    buf = BytesIO()
+    img.save(buf, "JPEG")
+    return buf.getvalue()
+
+
+class TestCropToSquare:
+    """Tests for crop_to_square function."""
+
+    def test_square_passthrough(self) -> None:
+        """Already-square image should return original bytes unchanged."""
+        data = _make_image_bytes(500, 500)
+        result = crop_to_square(data)
+        assert result == data
+
+    def test_square_passthrough_1px_tolerance(self) -> None:
+        """Image within 1px of square should return original bytes."""
+        data = _make_image_bytes(500, 501)
+        result = crop_to_square(data)
+        assert result == data
+
+    def test_landscape_16_9_crop(self) -> None:
+        """16:9 landscape image should be center-cropped to square."""
+        data = _make_image_bytes(1280, 720)
+        result = crop_to_square(data)
+        img = PILImage.open(BytesIO(result))
+        assert img.size == (720, 720)
+
+    def test_portrait_crop(self) -> None:
+        """Portrait image should be center-cropped to square."""
+        data = _make_image_bytes(400, 800)
+        result = crop_to_square(data)
+        img = PILImage.open(BytesIO(result))
+        assert img.size == (400, 400)
+
+    def test_output_is_rgb_jpeg(self) -> None:
+        """Output should be RGB JPEG regardless of input format."""
+        # Create RGBA PNG input
+        img = PILImage.new("RGBA", (1280, 720), color=(255, 0, 0, 128))
+        buf = BytesIO()
+        img.save(buf, "PNG")
+        png_data = buf.getvalue()
+
+        result = crop_to_square(png_data)
+        out = PILImage.open(BytesIO(result))
+        assert out.mode == "RGB"
+        assert out.format == "JPEG"
