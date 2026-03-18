@@ -15,10 +15,14 @@ import {
   NavbarMenu,
   NavbarMenuItem,
   NavbarMenuToggle,
+  Tab,
+  Tabs,
 } from "@heroui/react";
-import { Link } from "@tanstack/react-router";
+import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
 import {
   Disc3Icon,
+  HeartIcon,
+  RefreshCwIcon,
   RocketIcon,
   StarIcon,
 } from "lucide-react";
@@ -47,6 +51,10 @@ export function Header() {
   } = useDrive();
   const { data: versionInfo } = useVersionCheck();
   const { hasActiveJobs } = useJobs();
+  const navigate = useNavigate();
+  const routerState = useRouterState();
+  const currentPath = routerState.location.pathname;
+  const activeTab = currentPath === "/likes" ? "/likes" : "/";
 
   return (
     <Navbar
@@ -72,6 +80,41 @@ export function Header() {
           <p className="text-foreground ml-2 text-xl font-bold">yubal</p>
         </Link>
       </NavbarBrand>
+
+      {/* Tab navigation */}
+      <NavbarContent className="hidden gap-0 sm:flex" justify="start">
+        <NavbarItem>
+          <Tabs
+            selectedKey={activeTab}
+            onSelectionChange={(key) => navigate({ to: key as string })}
+            variant="underlined"
+            size="sm"
+            classNames={{
+              tabList: "gap-4",
+              tab: "px-1",
+            }}
+          >
+            <Tab
+              key="/"
+              title={
+                <div className="flex items-center gap-1.5">
+                  <RefreshCwIcon className="h-3.5 w-3.5" />
+                  <span>Sync</span>
+                </div>
+              }
+            />
+            <Tab
+              key="/likes"
+              title={
+                <div className="flex items-center gap-1.5">
+                  <HeartIcon className="h-3.5 w-3.5" />
+                  <span>Likes</span>
+                </div>
+              }
+            />
+          </Tabs>
+        </NavbarItem>
+      </NavbarContent>
 
       {/* Actions */}
       <NavbarContent className="items-center gap-2" justify="end">
@@ -143,6 +186,34 @@ export function Header() {
 
       {/* Mobile menu */}
       <NavbarMenu>
+        <NavbarMenuItem>
+          <HeroUILink
+            href="/"
+            color={activeTab === "/" ? "primary" : "foreground"}
+            className="w-full"
+            size="lg"
+            onPress={() => {
+              navigate({ to: "/" });
+              setIsMenuOpen(false);
+            }}
+          >
+            Sync
+          </HeroUILink>
+        </NavbarMenuItem>
+        <NavbarMenuItem>
+          <HeroUILink
+            href="/likes"
+            color={activeTab === "/likes" ? "primary" : "foreground"}
+            className="w-full"
+            size="lg"
+            onPress={() => {
+              navigate({ to: "/likes" });
+              setIsMenuOpen(false);
+            }}
+          >
+            Likes
+          </HeroUILink>
+        </NavbarMenuItem>
         <NavbarMenuItem>
           <CookieDropdown
             variant="mobile"

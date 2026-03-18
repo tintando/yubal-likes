@@ -15,7 +15,7 @@ from yubal_api.schemas.jobs import JobCreatedResponse
 
 router = APIRouter(prefix="/imports", tags=["imports"])
 
-ALLOWED_EXTENSIONS = {".mp3", ".m4a", ".flac", ".opus", ".ogg"}
+ALLOWED_EXTENSIONS = {".mp3", ".m4a", ".mp4", ".flac", ".opus", ".ogg"}
 MAX_FILES = 50
 MAX_FILE_SIZE = 100 * 1024 * 1024  # 100MB
 

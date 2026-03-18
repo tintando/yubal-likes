@@ -32,7 +32,7 @@ export function LogsPanel({ jobs = [] }: Props) {
   }, [lines]);
 
   return (
-    <Panel>
+    <Panel className="flex-1 min-h-0">
       <PanelHeader
         className="hover:bg-content2 cursor-pointer select-none"
         onClick={() => setIsExpanded(!isExpanded)}
@@ -85,23 +85,17 @@ export function LogsPanel({ jobs = [] }: Props) {
           >
             <PanelContent
               ref={containerRef}
-              height="h-70"
+              height="min-h-0 flex-1"
               className="logs-container space-y-0.5 p-4 font-mono text-xs"
             >
               {lines.length === 0 ? (
                 <EmptyState icon={TerminalIcon} title="No activity yet" mono />
               ) : (
-                <AnimatePresence initial={false}>
-                  {lines.map((line) => (
-                    <motion.div
-                      key={line.id}
-                      initial={{ opacity: 0, y: 5 }}
-                      animate={{ opacity: 1, y: 0 }}
-                    >
-                      <LogLine entry={line.entry} />
-                    </motion.div>
-                  ))}
-                </AnimatePresence>
+                lines.map((line) => (
+                  <div key={line.id}>
+                    <LogLine entry={line.entry} />
+                  </div>
+                ))
               )}
             </PanelContent>
           </motion.div>

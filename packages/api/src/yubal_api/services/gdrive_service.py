@@ -341,6 +341,37 @@ class GDriveService:
         return folder["id"]
 
     @staticmethod
+    def find_file_in_folder(service, filename: str, parent_id: str) -> str | None:
+        """Find a file by name in a folder, returning its file ID."""
+        escaped = filename.replace("\\", "\\\\").replace("'", "\\'")
+        query = (
+            f"name = '{escaped}' and '{parent_id}' in parents "
+            f"and mimeType != '{FOLDER_MIME}' and trashed = false"
+        )
+        resp = service.files().list(q=query, fields="files(id)", pageSize=1).execute()
+        files = resp.get("files", [])
+        return files[0]["id"] if files else None
+
+    @staticmethod
+    def delete_file(service, file_id: str) -> None:
+        """Delete a file by ID."""
+        service.files().delete(fileId=file_id).execute()
+
+    def delete_file_by_path(self, relative_path: str) -> bool:
+        """Delete a file on Drive by its relative path.
+
+        Returns True if the file was found and deleted.
+        """
+        service = self._build_service()
+        rel = Path(relative_path)
+        parent_id = self._ensure_folder_chain(service, rel.parent)
+        file_id = self.find_file_in_folder(service, rel.name, parent_id)
+        if file_id:
+            self.delete_file(service, file_id)
+            return True
+        return False
+
+    @staticmethod
     def _upload_file(service, file_path: Path, parent_id: str) -> str:
         """Upload a single file and return its Drive file ID."""
         metadata = {

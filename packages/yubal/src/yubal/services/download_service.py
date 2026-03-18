@@ -472,17 +472,7 @@ class DownloadService:
         """
         output_path = self._build_output_path_for_track(track)
 
-        try:
-            video_id = self._select_video_id_for_download(track)
-        except DownloadError as e:
-            logger.error("Track '%s' failed: %s", track.title, e)
-            return DownloadResult(
-                track=track,
-                status=DownloadStatus.FAILED,
-                error=str(e),
-            )
-
-        # Skip existing files (with_suffix breaks on dots in filename)
+        # Skip existing files early (before video ID selection to avoid unnecessary work)
         expected = Path(f"{output_path}.{self._config.codec.value}")
         if expected.exists():
             logger.info(
@@ -491,14 +481,21 @@ class DownloadService:
                 expected,
                 extra={"status": "skipped", "file_path": str(expected)},
             )
-            # Still fetch lyrics for existing files that don't have them yet
-            self._fetch_and_save_lyrics(expected, track)
             return DownloadResult(
                 track=track,
                 status=DownloadStatus.SKIPPED,
                 output_path=expected,
-                video_id_used=video_id,
                 skip_reason=SkipReason.FILE_EXISTS,
+            )
+
+        try:
+            video_id = self._select_video_id_for_download(track)
+        except DownloadError as e:
+            logger.error("Track '%s' failed: %s", track.title, e)
+            return DownloadResult(
+                track=track,
+                status=DownloadStatus.FAILED,
+                error=str(e),
             )
 
         try:

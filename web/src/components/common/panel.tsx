@@ -8,7 +8,7 @@ type Props = HTMLAttributes<HTMLElement> & {
 export function Panel({ children, className = "" }: Props) {
   return (
     <Card
-      className={className}
+      className={`flex flex-col ${className}`}
       classNames={{
         body: "px-0",
       }}
@@ -69,7 +69,7 @@ export function PanelContent({
   ...props
 }: ContentProps) {
   return (
-    <CardBody className="pt-0">
+    <CardBody className="flex-1 min-h-0 flex flex-col pt-0">
       <ScrollShadow
         ref={ref}
         className={`${height} px-4 py-4 ${className}`}

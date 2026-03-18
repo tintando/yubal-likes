@@ -15,7 +15,7 @@ export type SyncResult =
 // --- Subscriptions ---
 
 export async function listSubscriptions(): Promise<Subscription[]> {
-  const { data, error } = await api.GET("/subscriptions");
+  const { data, error } = await api.GET("/api/subscriptions");
   if (error) return [];
   return data.items;
 }
@@ -24,7 +24,7 @@ export async function addSubscription(
   url: string,
   maxItems?: number,
 ): Promise<AddSubscriptionResult> {
-  const { data, error, response } = await api.POST("/subscriptions", {
+  const { data, error, response } = await api.POST("/api/subscriptions", {
     body: { url, max_items: maxItems },
   });
 
@@ -51,7 +51,7 @@ export async function updateSubscription(
   id: string,
   updates: { enabled?: boolean },
 ): Promise<Subscription | null> {
-  const { data, error } = await api.PATCH("/subscriptions/{subscription_id}", {
+  const { data, error } = await api.PATCH("/api/subscriptions/{subscription_id}", {
     params: { path: { subscription_id: id } },
     body: updates,
   });
@@ -60,7 +60,7 @@ export async function updateSubscription(
 }
 
 export async function deleteSubscription(id: string): Promise<boolean> {
-  const { error } = await api.DELETE("/subscriptions/{subscription_id}", {
+  const { error } = await api.DELETE("/api/subscriptions/{subscription_id}", {
     params: { path: { subscription_id: id } },
   });
   return !error;
@@ -70,7 +70,7 @@ export async function deleteSubscription(id: string): Promise<boolean> {
 
 export async function syncSubscription(id: string): Promise<SyncResult> {
   const { data, error, response } = await api.POST(
-    "/subscriptions/{subscription_id}/sync",
+    "/api/subscriptions/{subscription_id}/sync",
     {
       params: { path: { subscription_id: id } },
     },
@@ -90,7 +90,7 @@ export async function syncSubscription(id: string): Promise<SyncResult> {
 }
 
 export async function syncAll(): Promise<SyncResult> {
-  const { data, error } = await api.POST("/subscriptions/sync");
+  const { data, error } = await api.POST("/api/subscriptions/sync");
 
   if (error) {
     return { success: false, error: "Failed to create sync jobs" };
@@ -102,7 +102,7 @@ export async function syncAll(): Promise<SyncResult> {
 // --- Status ---
 
 export async function getStatus(): Promise<SchedulerStatus | null> {
-  const { data, error } = await api.GET("/scheduler");
+  const { data, error } = await api.GET("/api/scheduler");
   if (error) return null;
   return data;
 }

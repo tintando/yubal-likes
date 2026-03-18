@@ -3,6 +3,7 @@
 import hashlib
 import logging
 import shutil
+from collections.abc import Callable
 from dataclasses import dataclass, field
 from pathlib import Path
 
@@ -66,7 +67,7 @@ class FileImportService:
     def import_files(
         self,
         file_paths: list[Path],
-        on_progress: callable | None = None,
+        on_progress: Callable | None = None,
         cancel_token: CancelToken | None = None,
     ) -> ImportResult:
         """Import local audio files with YTM metadata enrichment.

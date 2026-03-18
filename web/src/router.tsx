@@ -3,6 +3,7 @@
 import { Footer } from "@/components/layout/footer";
 import { Header } from "@/components/layout/header";
 import { JobsPage } from "@/pages/jobs";
+import { LikesManagerPage } from "@/pages/likes-manager";
 import { HeroUIProvider, ToastProvider } from "@heroui/react";
 import {
   createRootRoute,
@@ -27,7 +28,7 @@ function RootLayout() {
       <ToastProvider />
       <div className="flex min-h-screen flex-col">
         <Header />
-        <main className="m-auto w-full max-w-5xl flex-1 px-4 py-6">
+        <main className="m-auto w-full max-w-5xl flex-1 flex flex-col px-4 py-6">
           <Outlet />
         </main>
         <Footer />
@@ -55,7 +56,13 @@ const jobsRoute = createRoute({
   component: JobsPage,
 });
 
-const routeTree = rootRoute.addChildren([jobsRoute]);
+const likesRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/likes",
+  component: LikesManagerPage,
+});
+
+const routeTree = rootRoute.addChildren([jobsRoute, likesRoute]);
 
 export const router = createRouter({ routeTree });
 

@@ -26,7 +26,7 @@ export async function createJob(
   url: string,
   maxItems?: number,
 ): Promise<CreateJobResult> {
-  const { data, error, response } = await api.POST("/jobs", {
+  const { data, error, response } = await api.POST("/api/jobs", {
     body: { url, max_items: maxItems },
   });
 
@@ -53,14 +53,14 @@ export async function createJob(
 }
 
 export async function listJobs(): Promise<{ jobs: Job[] }> {
-  const { data, error } = await api.GET("/jobs");
+  const { data, error } = await api.GET("/api/jobs");
 
   if (error) return { jobs: [] };
   return { jobs: data.jobs };
 }
 
 export async function deleteJob(jobId: string): Promise<void> {
-  const { error } = await api.DELETE("/jobs/{job_id}", {
+  const { error } = await api.DELETE("/api/jobs/{job_id}", {
     params: { path: { job_id: jobId } },
   });
 
@@ -68,7 +68,7 @@ export async function deleteJob(jobId: string): Promise<void> {
 }
 
 export async function cancelJob(jobId: string): Promise<void> {
-  const { error } = await api.POST("/jobs/{job_id}/cancel", {
+  const { error } = await api.POST("/api/jobs/{job_id}/cancel", {
     params: { path: { job_id: jobId } },
   });
 
@@ -79,7 +79,7 @@ export async function resolveOrphans(
   jobId: string,
   decisions: { path: string; action: "delete" | "keep" | "never_delete" }[],
 ): Promise<boolean> {
-  const { error } = await api.POST("/jobs/{job_id}/resolve-orphans", {
+  const { error } = await api.POST("/api/jobs/{job_id}/resolve-orphans", {
     params: { path: { job_id: jobId } },
     body: { decisions },
   });

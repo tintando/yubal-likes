@@ -417,20 +417,25 @@ class JobExecutor:
         started_at = datetime.now(UTC)
         tmp_dir = file_paths[0].parent if file_paths else None
 
+        stats = None
+        content_info = None
+        output_paths: list[Path] = []
+
         try:
             if cancel_token.is_cancelled:
                 return
 
             async with asyncio.timeout(self._job_timeout):
+                content_info = ContentInfo(
+                    title=f"Import ({len(file_paths)} files)",
+                    artist="Local",
+                    track_count=len(file_paths),
+                )
                 self._job_store.transition(
                     job_id,
                     JobStatus.DOWNLOADING,
                     started_at=started_at,
-                    content_info=ContentInfo(
-                        title=f"Import ({len(file_paths)} files)",
-                        artist="Local",
-                        track_count=len(file_paths),
-                    ),
+                    content_info=content_info,
                 )
 
                 loop = asyncio.get_running_loop()
@@ -465,9 +470,7 @@ class JobExecutor:
                     cancel_token,
                 )
 
-                if cancel_token.is_cancelled:
-                    pass
-                else:
+                if not cancel_token.is_cancelled:
                     from yubal.models.results import PhaseStats
 
                     stats = PhaseStats(
@@ -475,17 +478,49 @@ class JobExecutor:
                         failed=result.failed,
                         skipped=0,
                     )
-                    self._job_store.transition(
-                        job_id,
-                        JobStatus.COMPLETED,
-                        progress=PROGRESS_COMPLETE,
-                        download_stats=stats,
-                        content_info=ContentInfo(
-                            title=f"Import ({len(file_paths)} files)",
-                            artist="Local",
-                            track_count=len(file_paths),
-                        ),
-                    )
+
+                    output_paths = [
+                        Path(r.output_path)
+                        for r in result.results
+                        if r.output_path
+                    ]
+
+                    # Apply ReplayGain across entire data directory
+                    if self._apply_replaygain and output_paths:
+                        self._job_store.transition(
+                            job_id,
+                            JobStatus.IMPORTING,
+                            progress=0.0,
+                            content_info=content_info,
+                        )
+                        from yubal_api.services.replaygain_scanner import (
+                            ReplayGainScanner,
+                        )
+
+                        scanner = ReplayGainScanner(
+                            self._base_path, self._audio_format
+                        )
+                        if scanner.is_available:
+                            await asyncio.to_thread(scanner._run_scan)
+
+            # Upload to Drive (outside timeout context, same as _run_job)
+            if (
+                not cancel_token.is_cancelled
+                and output_paths
+                and self._gdrive_service
+            ):
+                await self._upload_to_drive(
+                    job_id, self._base_path, cancel_token, content_info
+                )
+
+            if not cancel_token.is_cancelled and stats:
+                self._job_store.transition(
+                    job_id,
+                    JobStatus.COMPLETED,
+                    progress=PROGRESS_COMPLETE,
+                    download_stats=stats,
+                    content_info=content_info,
+                )
 
         except TimeoutError:
             logger.warning(

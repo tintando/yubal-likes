@@ -173,7 +173,7 @@ function ContentInfo({
   audioBitrate: number | null;
   showBitrate: boolean;
   kind: "playlist" | "album" | "track" | null;
-  source: "manual" | "scheduler";
+  source: "manual" | "scheduler" | "import";
   createdAt: string | undefined;
 }) {
   return (

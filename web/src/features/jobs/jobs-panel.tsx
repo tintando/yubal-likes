@@ -73,7 +73,7 @@ function JobRow({
 
   return (
     <div className={`group ${opacity}`}>
-      <div className="flex items-center gap-3 px-2 py-1.5">
+      <div className="flex min-h-9 items-center gap-3 px-2 py-1.5">
         {/* Status icon */}
         <StatusIcon status={job.status} hasPartialFailures={hasPartialFailures} />
 
@@ -224,7 +224,7 @@ export function JobsPanel({ jobs, history, isLoading, onCancel, onDelete, onRetr
       >
         Recent syncs
       </PanelHeader>
-      <PanelContent height="h-80" className="space-y-0">
+      <PanelContent height="h-40" className="space-y-0">
         {isLoading ? (
           <div className="flex h-full items-center justify-center">
             <span className="text-foreground-400 text-small font-mono">

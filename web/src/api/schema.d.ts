@@ -4,7 +4,7 @@
  */
 
 export interface paths {
-    "/health": {
+    "/api/health": {
         parameters: {
             query?: never;
             header?: never;
@@ -21,7 +21,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/info": {
+    "/api/info": {
         parameters: {
             query?: never;
             header?: never;
@@ -44,7 +44,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/jobs": {
+    "/api/jobs": {
         parameters: {
             query?: never;
             header?: never;
@@ -76,7 +76,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/jobs/{job_id}/cancel": {
+    "/api/jobs/{job_id}/cancel": {
         parameters: {
             query?: never;
             header?: never;
@@ -96,7 +96,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/jobs/{job_id}": {
+    "/api/jobs/{job_id}": {
         parameters: {
             query?: never;
             header?: never;
@@ -118,7 +118,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/jobs/{job_id}/resolve-orphans": {
+    "/api/jobs/{job_id}/resolve-orphans": {
         parameters: {
             query?: never;
             header?: never;
@@ -127,7 +127,10 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Resolve Orphans */
+        /**
+         * Resolve Orphans
+         * @description Resolve orphan file review and complete the job.
+         */
         post: operations["resolve_orphans_api_jobs__job_id__resolve_orphans_post"];
         delete?: never;
         options?: never;
@@ -135,7 +138,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/jobs/sse": {
+    "/api/jobs/sse": {
         parameters: {
             query?: never;
             header?: never;
@@ -155,7 +158,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/logs": {
+    "/api/logs": {
         parameters: {
             query?: never;
             header?: never;
@@ -175,7 +178,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/logs/sse": {
+    "/api/logs/sse": {
         parameters: {
             query?: never;
             header?: never;
@@ -195,7 +198,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/cookies/status": {
+    "/api/cookies/status": {
         parameters: {
             query?: never;
             header?: never;
@@ -215,7 +218,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/cookies": {
+    "/api/cookies": {
         parameters: {
             query?: never;
             header?: never;
@@ -242,7 +245,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/drive/status": {
+    "/api/drive/status": {
         parameters: {
             query?: never;
             header?: never;
@@ -262,7 +265,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/drive/credentials": {
+    "/api/drive/credentials": {
         parameters: {
             query?: never;
             header?: never;
@@ -286,7 +289,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/drive/auth/url": {
+    "/api/drive/auth/url": {
         parameters: {
             query?: never;
             header?: never;
@@ -306,7 +309,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/drive/auth/callback": {
+    "/api/drive/auth/callback": {
         parameters: {
             query?: never;
             header?: never;
@@ -326,7 +329,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/subscriptions/sync": {
+    "/api/subscriptions/sync": {
         parameters: {
             query?: never;
             header?: never;
@@ -346,7 +349,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/subscriptions": {
+    "/api/subscriptions": {
         parameters: {
             query?: never;
             header?: never;
@@ -370,7 +373,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/subscriptions/{subscription_id}": {
+    "/api/subscriptions/{subscription_id}": {
         parameters: {
             query?: never;
             header?: never;
@@ -394,7 +397,7 @@ export interface paths {
         patch: operations["update_subscription_api_subscriptions__subscription_id__patch"];
         trace?: never;
     };
-    "/subscriptions/{subscription_id}/sync": {
+    "/api/subscriptions/{subscription_id}/sync": {
         parameters: {
             query?: never;
             header?: never;
@@ -414,7 +417,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/scheduler": {
+    "/api/scheduler": {
         parameters: {
             query?: never;
             header?: never;
@@ -434,7 +437,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/replaygain/status": {
+    "/api/replaygain/status": {
         parameters: {
             query?: never;
             header?: never;
@@ -451,7 +454,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/replaygain/scan": {
+    "/api/replaygain/scan": {
         parameters: {
             query?: never;
             header?: never;
@@ -468,6 +471,169 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/history": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Syncs
+         * @description List sync history (newest first, paginated).
+         */
+        get: operations["list_syncs_api_history_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/history/{sync_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Sync Detail
+         * @description Get a single sync with its track events.
+         */
+        get: operations["get_sync_detail_api_history__sync_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/tracks": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Track Events
+         * @description List track events (filterable by event type, paginated).
+         */
+        get: operations["list_track_events_api_tracks_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/imports": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Import Files
+         * @description Upload and import local audio files.
+         *
+         *     Files are validated, saved to a temp directory, then processed
+         *     as an import job with YTM metadata enrichment.
+         */
+        post: operations["import_files_api_imports_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/likes": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Liked Songs
+         * @description List all liked songs from YouTube Music.
+         */
+        get: operations["list_liked_songs_api_likes_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/likes/{video_id}/unlike": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Unlike Song
+         * @description Remove a song from YouTube Music liked songs.
+         */
+        post: operations["unlike_song_api_likes__video_id__unlike_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/likes/{video_id}/delete": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Delete Song Files
+         * @description Delete local and Drive files for a song.
+         */
+        post: operations["delete_song_files_api_likes__video_id__delete_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/likes/{video_id}/redownload": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Redownload Song
+         * @description Redownload a song by deleting local files and creating a new sync job.
+         */
+        post: operations["redownload_song_api_likes__video_id__redownload_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -478,6 +644,11 @@ export interface components {
          * @enum {string}
          */
         AudioCodec: "opus" | "mp3" | "m4a";
+        /** Body_import_files_api_imports_post */
+        Body_import_files_api_imports_post: {
+            /** Files */
+            files: string[];
+        };
         /**
          * CancelJobResponse
          * @description Response when a job is cancelled.
@@ -553,32 +724,6 @@ export interface components {
          * @enum {string}
          */
         ContentKind: "album" | "playlist" | "track";
-        /** OrphanFile */
-        OrphanFile: {
-            /** Path */
-            path: string;
-            /** Size */
-            size: number;
-        };
-        /** OrphanDecision */
-        OrphanDecision: {
-            /** Path */
-            path: string;
-            /** Action */
-            action: "delete" | "keep" | "never_delete";
-        };
-        /** ResolveOrphansRequest */
-        ResolveOrphansRequest: {
-            decisions: components["schemas"]["OrphanDecision"][];
-        };
-        /** ResolveOrphansResponse */
-        ResolveOrphansResponse: {
-            /**
-             * Message
-             * @default Orphans resolved
-             */
-            message: string;
-        };
         /**
          * CookiesStatusResponse
          * @description Cookies status response model.
@@ -624,6 +769,13 @@ export interface components {
              * @description Maximum number of tracks to download
              */
             max_items?: number | null;
+        };
+        /** DeleteFilesResponse */
+        DeleteFilesResponse: {
+            /** Files Deleted */
+            files_deleted: number;
+            /** Drive Files Deleted */
+            drive_files_deleted: number;
         };
         /**
          * DriveAuthUrlResponse
@@ -729,7 +881,10 @@ export interface components {
             content_info: components["schemas"]["ContentInfo"] | null;
             /** @default null */
             download_stats: components["schemas"]["PhaseStats"] | null;
-            /** @default null */
+            /**
+             * Pending Orphans
+             * @default null
+             */
             pending_orphans: components["schemas"]["OrphanFile"][] | null;
             /**
              * Created At
@@ -766,7 +921,7 @@ export interface components {
          * @description Source of a background job.
          * @enum {string}
          */
-        JobSource: "manual" | "scheduler";
+        JobSource: "manual" | "scheduler" | "import";
         /**
          * JobStatus
          * @description Status of a background job.
@@ -780,6 +935,28 @@ export interface components {
         JobsResponse: {
             /** Jobs */
             jobs: components["schemas"]["Job"][];
+        };
+        /** LikedSong */
+        LikedSong: {
+            /** Video Id */
+            video_id: string;
+            /** Title */
+            title: string;
+            /** Artists */
+            artists: string[];
+            /** Album */
+            album?: string | null;
+            /** Thumbnail Url */
+            thumbnail_url?: string | null;
+            /** Duration Seconds */
+            duration_seconds: number;
+        };
+        /** LikedSongsResponse */
+        LikedSongsResponse: {
+            /** Items */
+            items: components["schemas"]["LikedSong"][];
+            /** Total */
+            total: number;
         };
         /**
          * LogEntry
@@ -864,7 +1041,7 @@ export interface components {
              * @description Specific event type for granular tracking
              * @default null
              */
-            event_type: "track_download" | "file_upload" | null;
+            event_type: ("track_download" | "file_upload") | null;
             /**
              * Current
              * @description Current item index in progress (0-indexed)
@@ -935,7 +1112,7 @@ export interface components {
         LogStats: {
             /**
              * Stats Type
-             * @description Type of stats: 'extraction' or 'download'
+             * @description Type of stats: extraction, download, upload, or replaygain
              * @enum {string}
              */
             stats_type: "extraction" | "download" | "upload" | "replaygain" | "cleanup";
@@ -966,6 +1143,29 @@ export interface components {
             skipped_by_reason?: {
                 [key: string]: number;
             };
+        };
+        /**
+         * OrphanDecision
+         * @description Decision for a single orphan file.
+         */
+        OrphanDecision: {
+            /** Path */
+            path: string;
+            /**
+             * Action
+             * @enum {string}
+             */
+            action: "delete" | "keep" | "never_delete";
+        };
+        /**
+         * OrphanFile
+         * @description An orphaned file found during cleanup.
+         */
+        OrphanFile: {
+            /** Path */
+            path: string;
+            /** Size */
+            size: number;
         };
         /**
          * PhaseStats
@@ -1005,6 +1205,11 @@ export interface components {
                 [key: string]: number;
             };
         };
+        /** RedownloadResponse */
+        RedownloadResponse: {
+            /** Job Id */
+            job_id: string;
+        };
         /** ReplayGainScanResponse */
         ReplayGainScanResponse: {
             /**
@@ -1023,6 +1228,26 @@ export interface components {
             progress?: number | null;
             /** Current Directory */
             current_directory?: string | null;
+        };
+        /**
+         * ResolveOrphansRequest
+         * @description Request to resolve orphan review.
+         */
+        ResolveOrphansRequest: {
+            /** Decisions */
+            decisions: components["schemas"]["OrphanDecision"][];
+        };
+        /**
+         * ResolveOrphansResponse
+         * @description Response when orphans are resolved.
+         */
+        ResolveOrphansResponse: {
+            /**
+             * Message
+             * @default Orphans resolved
+             * @constant
+             */
+            message: "Orphans resolved";
         };
         /**
          * SchedulerStatus
@@ -1132,12 +1357,115 @@ export interface components {
             enabled?: boolean | null;
         };
         /**
+         * SyncDetailResponse
+         * @description Single sync with its track events.
+         */
+        SyncDetailResponse: {
+            sync: components["schemas"]["SyncHistoryResponse"];
+            /** Track Events */
+            track_events: components["schemas"]["TrackEventResponse"][];
+        };
+        /**
+         * SyncHistoryResponse
+         * @description A sync history record.
+         */
+        SyncHistoryResponse: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Source */
+            source: string;
+            /** Status */
+            status: string;
+            /** Track Count */
+            track_count: number | null;
+            /** Tracks Added */
+            tracks_added: number;
+            /** Tracks Failed */
+            tracks_failed: number;
+            /** Tracks Skipped */
+            tracks_skipped: number;
+            /** Orphans Deleted */
+            orphans_deleted: number;
+            /** Orphans Kept */
+            orphans_kept: number;
+            /** Audio Codec */
+            audio_codec: string | null;
+            /** Audio Bitrate */
+            audio_bitrate: number | null;
+            /** Started At */
+            started_at: string | null;
+            /** Completed At */
+            completed_at: string | null;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+        };
+        /**
+         * SyncListResponse
+         * @description Paginated list of sync history.
+         */
+        SyncListResponse: {
+            /** Items */
+            items: components["schemas"]["SyncHistoryResponse"][];
+            /** Total */
+            total: number;
+        };
+        /**
          * SyncResponse
          * @description Response for sync operations.
          */
         SyncResponse: {
             /** Job Ids */
             job_ids: string[];
+        };
+        /**
+         * TrackEventListResponse
+         * @description Paginated list of track events.
+         */
+        TrackEventListResponse: {
+            /** Items */
+            items: components["schemas"]["TrackEventResponse"][];
+            /** Total */
+            total: number;
+        };
+        /**
+         * TrackEventResponse
+         * @description A track event record.
+         */
+        TrackEventResponse: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Sync Id */
+            sync_id: string | null;
+            /** Event */
+            event: string;
+            /** Path */
+            path: string;
+            /** Title */
+            title: string | null;
+            /** Artist */
+            artist: string | null;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+        };
+        /** UnlikeResponse */
+        UnlikeResponse: {
+            /**
+             * Status
+             * @default ok
+             */
+            status: string;
         };
         /** ValidationError */
         ValidationError: {
@@ -2006,6 +2334,262 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ReplayGainScanResponse"];
+                };
+            };
+        };
+    };
+    list_syncs_api_history_get: {
+        parameters: {
+            query?: {
+                limit?: number;
+                offset?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SyncListResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_sync_detail_api_history__sync_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                sync_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SyncDetailResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_track_events_api_tracks_get: {
+        parameters: {
+            query?: {
+                event?: string | null;
+                limit?: number;
+                offset?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TrackEventListResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    import_files_api_imports_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": components["schemas"]["Body_import_files_api_imports_post"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["JobCreatedResponse"];
+                };
+            };
+            /** @description Invalid file upload */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Queue is full */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_liked_songs_api_likes_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LikedSongsResponse"];
+                };
+            };
+        };
+    };
+    unlike_song_api_likes__video_id__unlike_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                video_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UnlikeResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    delete_song_files_api_likes__video_id__delete_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                video_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DeleteFilesResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    redownload_song_api_likes__video_id__redownload_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                video_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RedownloadResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };

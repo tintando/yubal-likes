@@ -20,6 +20,7 @@ from yubal_api.api.container import Services, get_services
 from yubal_api.db.history_repository import HistoryRepository
 from yubal_api.db.keep_list_repository import KeepListRepository
 from yubal_api.services.gdrive_service import GDriveService
+from yubal_api.services.likes_service import LikesService
 from yubal_api.services.replaygain_scanner import ReplayGainScanner
 from yubal_api.services.job_event_bus import JobEventBus
 from yubal_api.services.job_executor import JobExecutor
@@ -125,3 +126,17 @@ def _get_keep_list_repository(services: ServicesDep) -> KeepListRepository:
 
 
 KeepListRepositoryDep = Annotated[KeepListRepository, Depends(_get_keep_list_repository)]
+
+
+def _get_likes_service(
+    settings: SettingsDep, gdrive_service: GDriveServiceDep
+) -> LikesService:
+    return LikesService(
+        base_path=settings.data,
+        audio_format=settings.audio_format,
+        cache_path=settings.cache_path,
+        gdrive_service=gdrive_service,
+    )
+
+
+LikesServiceDep = Annotated[LikesService, Depends(_get_likes_service)]

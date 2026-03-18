@@ -50,6 +50,10 @@ class YTMusicProtocol(Protocol):
         """Fetch a single track by video ID."""
         ...
 
+    def rate_song(self, video_id: str, rating: str = "INDIFFERENT") -> None:
+        """Rate a song (LIKE, DISLIKE, or INDIFFERENT)."""
+        ...
+
 
 class YTMusicClient:
     """Production YouTube Music API client.
@@ -364,6 +368,33 @@ class YTMusicClient:
         except ValueError:
             logger.warning("Could not parse duration: %s", length)
             return 0
+
+    def rate_song(self, video_id: str, rating: str = "INDIFFERENT") -> None:
+        """Rate a song on YouTube Music.
+
+        Args:
+            video_id: YouTube video ID.
+            rating: One of "LIKE", "DISLIKE", "INDIFFERENT".
+
+        Raises:
+            ValueError: If video_id is empty or rating is invalid.
+            UpstreamAPIError: If API request fails.
+        """
+        if not video_id or not video_id.strip():
+            raise ValueError("video_id cannot be empty")
+        valid_ratings = {"LIKE", "DISLIKE", "INDIFFERENT"}
+        if rating not in valid_ratings:
+            raise ValueError(f"rating must be one of {valid_ratings}")
+
+        logger.debug("Rating song %s as %s", video_id, rating)
+        try:
+            self._ytm.rate_song(video_id, rating)
+        except (YTMusicServerError, YTMusicUserError) as e:
+            logger.warning("YTMusic API error rating song %s: %s", video_id, e)
+            raise UpstreamAPIError(f"Failed to rate song: {e}") from e
+        except YTMusicError as e:
+            logger.warning("YTMusic error rating song %s: %s", video_id, e)
+            raise UpstreamAPIError(f"Failed to rate song: {e}") from e
 
     def clear_album_cache(self) -> None:
         """Clear the album cache."""
