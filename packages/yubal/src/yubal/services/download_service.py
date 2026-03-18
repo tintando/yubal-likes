@@ -140,6 +140,12 @@ class YTDLPDownloader:
             },
             # Fetch the EJS challenge solver. See issue #29 https://github.com/guillevc/yubal/issues/29
             "remote_components": ["ejs:github"],
+            # Use "main" player JS variant. The default "tv" variant contains
+            # `self.location.origin` which crashes deno's JS challenge solver.
+            # See: https://github.com/yt-dlp/yt-dlp/issues/16256
+            "extractor_args": {
+                "youtube": {"player_js_variant": ["main"]},
+            },
         }
 
         # Use cookies for age-restricted content, premium quality, etc.
@@ -150,12 +156,15 @@ class YTDLPDownloader:
         return opts
 
     def _is_retryable_error(self, error_msg: str) -> bool:
-        """Check if the error is a retryable transient HTTP error."""
+        """Check if the error is a retryable transient error."""
         retryable_patterns = (
             "HTTP Error 403",
             "403 Forbidden",
             "HTTP Error 429",
             "HTTP Error 5",  # Catches 500, 502, 503, etc.
+            # YouTube may return empty format lists under rate limiting,
+            # causing yt-dlp's format selector to find no matches.
+            "Requested format is not available",
         )
         return any(pattern in error_msg for pattern in retryable_patterns)
 
