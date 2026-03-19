@@ -8,6 +8,34 @@ import {
 import { showErrorToast, showSuccessToast } from "@/lib/toast";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
+function scoreMatch(song: LikedSong, query: string): number {
+  const q = query.toLowerCase();
+  const title = song.title.toLowerCase();
+
+  // Title matches (highest priority)
+  if (title === q) return 100;
+  if (title.startsWith(q)) return 90;
+  if (title.split(/\s+/).some((w) => w.startsWith(q))) return 80;
+  if (title.includes(q)) return 70;
+
+  // Artist matches
+  const artists = song.artists.map((a) => a.toLowerCase());
+  if (artists.some((a) => a === q)) return 60;
+  if (artists.some((a) => a.startsWith(q))) return 50;
+  if (artists.some((a) => a.split(/\s+/).some((w) => w.startsWith(q)))) return 45;
+  if (artists.some((a) => a.includes(q))) return 40;
+
+  // Album matches (lowest priority)
+  const album = song.album?.toLowerCase();
+  if (album) {
+    if (album === q) return 35;
+    if (album.startsWith(q)) return 30;
+    if (album.includes(q)) return 25;
+  }
+
+  return 0;
+}
+
 export function useLikedSongs() {
   const [songs, setSongs] = useState<LikedSong[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -67,13 +95,11 @@ export function useLikedSongs() {
 
   const filteredSongs = useMemo(() => {
     if (!searchQuery.trim()) return songs;
-    const q = searchQuery.toLowerCase();
-    return songs.filter(
-      (s) =>
-        s.title.toLowerCase().includes(q) ||
-        s.artists.some((a) => a.toLowerCase().includes(q)) ||
-        (s.album && s.album.toLowerCase().includes(q)),
-    );
+    return songs
+      .map((s) => ({ song: s, score: scoreMatch(s, searchQuery) }))
+      .filter((x) => x.score > 0)
+      .sort((a, b) => b.score - a.score)
+      .map((x) => x.song);
   }, [songs, searchQuery]);
 
   return {

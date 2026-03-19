@@ -176,6 +176,11 @@ class Settings(BaseSettings):
         return self.db_path.parent
 
     @property
+    def thumbnails_path(self) -> Path:
+        """Directory for cached album art thumbnails."""
+        return self.cache_path / "thumbnails"
+
+    @property
     def gdrive_client_configured(self) -> bool:
         """Client secrets uploaded (may still need authorization)."""
         return self.gdrive_enabled and bool(self.gdrive_folder_id) and self.gdrive_client_secrets_file.exists()

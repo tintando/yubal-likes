@@ -26,7 +26,7 @@ StatsType = Literal["extraction", "download", "upload", "replaygain", "cleanup"]
 PhaseType = Literal["extracting", "downloading", "composing", "normalizing", "uploading", "scanning", "cleaning"]
 
 # Event type discriminator for progress entries
-EventType = Literal["track_download", "file_upload"]
+EventType = Literal["track_download", "file_upload", "file_cleanup"]
 
 # File type discriminator for file entries
 FileType = Literal["m3u", "cover", "audio"]
@@ -52,6 +52,7 @@ class LogStats(BaseModel):
     cached: int = 0
     unmatched: int = 0
     failed: int = 0
+    cleaned: int = 0
     skipped_by_reason: dict[SkipReasonType, int] = Field(
         default_factory=dict,
         description="Count of skipped items by reason",

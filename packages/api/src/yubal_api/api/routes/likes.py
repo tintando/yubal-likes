@@ -2,9 +2,11 @@
 
 import asyncio
 import re
+import urllib.request
+from pathlib import Path
 
 from fastapi import APIRouter, HTTPException
-
+from fastapi.responses import FileResponse
 from yubal.client import YTMusicClient
 from yubal.models.ytmusic import Thumbnail
 
@@ -22,6 +24,8 @@ from yubal_api.schemas.likes import (
 )
 
 router = APIRouter(prefix="/likes", tags=["likes"])
+
+_thumbnail_urls: dict[str, str] = {}
 
 
 def _create_ytm_client(settings) -> YTMusicClient:
@@ -44,19 +48,58 @@ async def list_liked_songs(settings: SettingsDep) -> LikedSongsResponse:
     client = _create_ytm_client(settings)
     playlist = await asyncio.to_thread(client.get_playlist, "LM")
 
-    items = [
-        LikedSong(
-            video_id=track.video_id,
-            title=track.title,
-            artists=[a.name for a in track.artists],
-            album=track.album.name if track.album else None,
-            thumbnail_url=_best_thumbnail(track.thumbnails),
-            duration_seconds=track.duration_seconds,
+    items = []
+    for track in playlist.tracks:
+        yt_url = _best_thumbnail(track.thumbnails)
+        if yt_url:
+            _thumbnail_urls[track.video_id] = yt_url
+        items.append(
+            LikedSong(
+                video_id=track.video_id,
+                title=track.title,
+                artists=[a.name for a in track.artists],
+                album=track.album.name if track.album else None,
+                thumbnail_url=(
+                    f"/api/likes/thumbnails/{track.video_id}"
+                    if yt_url
+                    else None
+                ),
+                duration_seconds=track.duration_seconds,
+            )
         )
-        for track in playlist.tracks
-    ]
 
     return LikedSongsResponse(items=items, total=len(items))
+
+
+def _fetch_and_cache_thumbnail(url: str, cache_file: Path) -> None:
+    """Download a thumbnail from YouTube and save to disk."""
+    cache_file.parent.mkdir(parents=True, exist_ok=True)
+    urllib.request.urlretrieve(url, cache_file)
+
+
+@router.get("/thumbnails/{video_id}")
+async def get_thumbnail(video_id: str, settings: SettingsDep) -> FileResponse:
+    """Serve a cached thumbnail, fetching from YouTube on first request."""
+    cache_file = settings.thumbnails_path / f"{video_id}.jpg"
+
+    if cache_file.exists():
+        return FileResponse(
+            cache_file,
+            media_type="image/jpeg",
+            headers={"Cache-Control": "public, max-age=604800"},
+        )
+
+    yt_url = _thumbnail_urls.get(video_id)
+    if not yt_url:
+        raise HTTPException(status_code=404, detail="Thumbnail URL not known")
+
+    await asyncio.to_thread(_fetch_and_cache_thumbnail, yt_url, cache_file)
+
+    return FileResponse(
+        cache_file,
+        media_type="image/jpeg",
+        headers={"Cache-Control": "public, max-age=604800"},
+    )
 
 
 @router.post("/{video_id}/unlike")
@@ -87,8 +130,11 @@ async def redownload_song(
     likes_service: LikesServiceDep,
     job_executor: JobExecutorDep,
 ) -> RedownloadResponse:
-    """Redownload a song by deleting local files and creating a new sync job."""
-    await asyncio.to_thread(likes_service.delete_local_files, video_id)
+    """Redownload a song by deleting local and Drive files and creating a new sync job."""
+    deleted, relative_paths = await asyncio.to_thread(
+        likes_service.delete_local_files, video_id
+    )
+    await asyncio.to_thread(likes_service.delete_drive_files, relative_paths)
     job = job_executor.create_and_start_job(
         url=f"https://music.youtube.com/watch?v={video_id}"
     )

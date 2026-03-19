@@ -3,11 +3,12 @@ import type { Job } from "@/api/jobs";
 import { EmptyState } from "@/components/common/empty-state";
 import { Panel, PanelContent, PanelHeader } from "@/components/common/panel";
 import { useEta } from "@/hooks/use-eta";
-import { formatDateTime } from "@/lib/format";
+import { formatDateTime, formatDuration } from "@/lib/format";
 import { isActive, isFinished, isRunning } from "@/lib/job-status";
 import { Button, Progress, Tooltip } from "@heroui/react";
 import {
   CheckCircleIcon,
+  ClockIcon,
   HistoryIcon,
   InboxIcon,
   RotateCwIcon,
@@ -160,6 +161,7 @@ function SyncHistoryRow({ sync }: { sync: SyncHistory }) {
   const isFailed = sync.status === "failed";
   const isCancelled = sync.status === "cancelled";
   const dateStr = formatDateTime(sync.completed_at ?? sync.created_at);
+  const duration = formatDuration(sync.started_at, sync.completed_at);
 
   const Icon = isFailed ? XCircleIcon : isCancelled ? XIcon : CheckCircleIcon;
   const iconColor = isFailed
@@ -194,6 +196,14 @@ function SyncHistoryRow({ sync }: { sync: SyncHistory }) {
         <span className="text-foreground text-small min-w-0 flex-1 truncate font-mono">
           {summary}
         </span>
+        {duration && (
+          <Tooltip content="Sync duration" closeDelay={0}>
+            <span className="text-tiny text-foreground-400 flex shrink-0 items-center gap-0.5 font-mono">
+              <ClockIcon size={12} />
+              {duration}
+            </span>
+          </Tooltip>
+        )}
         {sync.source === "scheduler" && (
           <Tooltip content="Synced by the scheduler" closeDelay={0}>
             <span className="text-tiny flex shrink-0 items-center gap-0.5 rounded bg-sky-500/15 px-1.5 py-0.5 font-mono text-sky-600 dark:bg-sky-500/20 dark:text-sky-300">

@@ -754,11 +754,12 @@ class JobExecutor:
                 cancel_token,
                 on_progress,
             )
-            logger.info(
-                "Drive upload for job %s: %d uploaded, %d skipped",
+            logger.debug(
+                "Drive upload for job %s: %d uploaded, %d skipped, %d cleaned",
                 job_id[:8],
                 result.files_uploaded,
                 result.files_skipped,
+                result.files_cleaned,
             )
         except Exception as e:
             # Drive upload failure shouldn't mark the job as failed

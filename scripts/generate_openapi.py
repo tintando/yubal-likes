@@ -78,12 +78,6 @@ def main() -> int:
             print(f"Type generation failed:\n{result.stderr}")
             return 1
 
-        # Strip /api prefix from paths since client.ts uses baseUrl: "/api"
-        schema_path = Path("web/src/api/schema.d.ts")
-        content = schema_path.read_text()
-        content = re.sub(r'"/api/', '"/', content)
-        schema_path.write_text(content)
-
         print("Generated web/src/api/schema.d.ts")
         return 0
 

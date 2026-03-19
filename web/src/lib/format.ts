@@ -29,6 +29,24 @@ export function formatDateShort(dateString: string | null | undefined): string {
   });
 }
 
+/** Format a duration in seconds to a human-readable string like "1m 23s" or "2h 5m" */
+export function formatDuration(
+  startDate: string | null | undefined,
+  endDate: string | null | undefined,
+): string {
+  if (!startDate || !endDate) return "";
+  const ms = new Date(endDate).getTime() - new Date(startDate).getTime();
+  if (ms < 0) return "";
+  const totalSeconds = Math.round(ms / 1000);
+  if (totalSeconds < 60) return `${totalSeconds}s`;
+  const mins = Math.floor(totalSeconds / 60);
+  const secs = totalSeconds % 60;
+  if (mins < 60) return secs > 0 ? `${mins}m ${secs}s` : `${mins}m`;
+  const hours = Math.floor(mins / 60);
+  const remainMins = mins % 60;
+  return remainMins > 0 ? `${hours}h ${remainMins}m` : `${hours}h`;
+}
+
 export function formatCountdown(targetDate: Date | null): string {
   if (!targetDate) return "—";
 

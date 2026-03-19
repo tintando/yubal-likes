@@ -156,9 +156,11 @@ function DownloadStatsLog({
 /** Upload stats display */
 function UploadStatsLog({
   success,
+  cleaned,
   skippedByReason,
 }: {
   success: number;
+  cleaned: number;
   skippedByReason: SkippedByReason;
 }) {
   const totalSkipped = Object.values(skippedByReason).reduce(
@@ -176,6 +178,13 @@ function UploadStatsLog({
           <span className="text-secondary">
             {formatSkippedMessage(skippedByReason)}
           </span>
+        </>
+      )}
+      {cleaned > 0 && (
+        <>
+          <span>,</span>
+          <XIcon className={`${ICON_CLASS} text-danger`} />
+          <span className="text-danger">{cleaned} cleaned</span>
         </>
       )}
     </div>
@@ -223,6 +232,9 @@ function ProgressLog({
       )}
       {eventType === "file_upload" && !isSkipped && (
         <ArrowUpIcon className={`${ICON_CLASS} text-primary`} />
+      )}
+      {eventType === "file_cleanup" && (
+        <XIcon className={`${ICON_CLASS} text-danger`} />
       )}
       {isSkipped && (
         <ArrowRightIcon className={`${ICON_CLASS} text-secondary`} />
@@ -317,6 +329,7 @@ export function LogLine({ entry }: { entry: LogEntry }) {
         return (
           <UploadStatsLog
             success={stats.success ?? 0}
+            cleaned={stats.cleaned ?? 0}
             skippedByReason={skippedByReason}
           />
         );

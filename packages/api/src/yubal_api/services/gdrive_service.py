@@ -24,6 +24,7 @@ class GDriveUploadResult:
 
     files_uploaded: int = 0
     files_skipped: int = 0
+    files_cleaned: int = 0
     bytes_uploaded: int = 0
 
 
@@ -46,6 +47,7 @@ class GDriveService:
         self._root_folder_id = root_folder_id
         self._folder_cache: dict[str, str] = {}
         self._files_cache: dict[str, dict[str, int]] = {}
+        self._file_ids: dict[str, dict[str, str]] = {}
 
     def _build_service(self):
         credentials = Credentials.from_authorized_user_file(
@@ -101,6 +103,7 @@ class GDriveService:
         service = self._build_service()
         self._folder_cache.clear()
         self._files_cache.clear()
+        self._file_ids.clear()
 
         # Collect all files to upload
         files = sorted(f for f in Path(local_path).rglob("*") if f.is_file())
@@ -173,9 +176,15 @@ class GDriveService:
             if on_progress:
                 on_progress(i + 1, total, file_path.name)
 
+        # Clean up remote files that no longer exist locally
+        cleaned = 0
+        if not cancel_token.is_cancelled:
+            cleaned = self._cleanup_orphans(service, local_path, cancel_token)
+
         result = GDriveUploadResult(
             files_uploaded=uploaded,
             files_skipped=skipped,
+            files_cleaned=cleaned,
             bytes_uploaded=bytes_uploaded,
         )
         logger.info(
@@ -185,10 +194,69 @@ class GDriveService:
                     "stats_type": "upload",
                     "success": uploaded,
                     "skipped_by_reason": {"file_exists": skipped},
+                    "cleaned": cleaned,
                 }
             },
         )
         return result
+
+    def _cleanup_orphans(
+        self, service, local_path: Path, cancel_token: CancelToken
+    ) -> int:
+        """Delete remote files that no longer exist locally."""
+        # Reverse mapping: folder_id -> relative path
+        id_to_path: dict[str, str] = {self._root_folder_id: ""}
+        for path, folder_id in self._folder_cache.items():
+            id_to_path[folder_id] = path
+
+        # All local relative paths
+        local_files = {
+            str(f.relative_to(local_path))
+            for f in local_path.rglob("*")
+            if f.is_file()
+        }
+
+        # Collect orphans first so we know the total
+        orphans: list[tuple[str, str]] = []  # (rel_path, file_id)
+        for folder_id, file_ids in self._file_ids.items():
+            folder_path = id_to_path.get(folder_id)
+            if folder_path is None:
+                continue
+            for filename, file_id in file_ids.items():
+                rel_path = (
+                    f"{folder_path}/{filename}" if folder_path else filename
+                )
+                if rel_path not in local_files:
+                    orphans.append((rel_path, file_id))
+
+        if not orphans:
+            return 0
+
+        deleted = 0
+        total = len(orphans)
+        for i, (rel_path, file_id) in enumerate(orphans):
+            if cancel_token.is_cancelled:
+                break
+            try:
+                self.delete_file(service, file_id)
+                deleted += 1
+                logger.info(
+                    "Cleaned up orphan from Drive: %s",
+                    rel_path,
+                    extra={
+                        "current": i,
+                        "total": total,
+                        "event_type": "file_cleanup",
+                    },
+                )
+            except Exception:
+                logger.warning(
+                    "Failed to delete orphan from Drive: %s",
+                    rel_path,
+                    exc_info=True,
+                )
+
+        return deleted
 
     def _ensure_folder_chain(self, service, rel_folder: Path) -> str:
         """Create (or find) nested folders under root, returning the leaf folder ID."""
@@ -277,7 +345,7 @@ class GDriveService:
                 service.files()
                 .list(
                     q=f"mimeType != '{FOLDER_MIME}' and trashed = false",
-                    fields="nextPageToken, files(name, size, parents)",
+                    fields="nextPageToken, files(id, name, size, parents)",
                     pageSize=1000,
                     pageToken=page_token,
                 )
@@ -289,6 +357,9 @@ class GDriveService:
                     if parent not in self._files_cache:
                         self._files_cache[parent] = {}
                     self._files_cache[parent][f["name"]] = int(f.get("size", 0))
+                    if parent not in self._file_ids:
+                        self._file_ids[parent] = {}
+                    self._file_ids[parent][f["name"]] = f["id"]
             page_token = resp.get("nextPageToken")
             if not page_token:
                 break
