@@ -10,3 +10,8 @@ export async function getReplayGainStatus() {
   if (error) return null;
   return data;
 }
+
+export async function cancelReplayGainScan(): Promise<boolean> {
+  const { error } = await api.POST("/api/replaygain/cancel");
+  return !error;
+}

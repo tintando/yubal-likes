@@ -13,4 +13,4 @@ class ReplayGainStatusResponse(BaseModel):
 
 
 class ReplayGainScanResponse(BaseModel):
-    status: Literal["started"]
+    status: Literal["started", "cancelled"]

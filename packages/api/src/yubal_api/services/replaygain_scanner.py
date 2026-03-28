@@ -50,6 +50,7 @@ class ReplayGainScanner:
         if self._running:
             raise RuntimeError("Scan already running")
         self._cancel.clear()
+        self._running = True
         self._progress = 0.0
         self._current_directory = None
         self._task = asyncio.create_task(self._run_async())
@@ -68,7 +69,6 @@ class ReplayGainScanner:
             self._current_directory = None
 
     def _run_scan(self) -> None:
-        self._running = True
         ext = AUDIO_EXTENSIONS[self._audio_format]
 
         # Find all directories containing audio files

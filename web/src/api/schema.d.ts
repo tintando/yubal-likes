@@ -471,6 +471,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/replaygain/cancel": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Cancel Replaygain Scan */
+        post: operations["cancel_replaygain_scan_api_replaygain_cancel_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/history": {
         parameters: {
             query?: never;
@@ -1239,9 +1256,9 @@ export interface components {
         ReplayGainScanResponse: {
             /**
              * Status
-             * @constant
+             * @enum {string}
              */
-            status: "started";
+            status: "started" | "cancelled";
         };
         /** ReplayGainStatusResponse */
         ReplayGainStatusResponse: {
@@ -2344,6 +2361,26 @@ export interface operations {
         };
     };
     start_replaygain_scan_api_replaygain_scan_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReplayGainScanResponse"];
+                };
+            };
+        };
+    };
+    cancel_replaygain_scan_api_replaygain_cancel_post: {
         parameters: {
             query?: never;
             header?: never;

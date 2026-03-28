@@ -1,5 +1,5 @@
 import { listSyncs, type SyncHistory } from "@/api/history";
-import { startReplayGainScan } from "@/api/replaygain";
+import { cancelReplayGainScan, getReplayGainStatus, startReplayGainScan } from "@/api/replaygain";
 import { getStatus } from "@/api/subscriptions";
 import type { SchedulerStatus } from "@/api/subscriptions";
 import { SubscriptionCard } from "@/features/subscriptions/subscription-card";
@@ -11,37 +11,85 @@ import { useScheduleCountdown } from "@/hooks/use-schedule-countdown";
 import { useTimeAgo } from "@/hooks/use-time-ago";
 import { showErrorToast, showSuccessToast } from "@/lib/toast";
 import { Button, Tooltip } from "@heroui/react";
-import { ClockIcon, Music2Icon, RefreshCwIcon, TimerIcon, UploadIcon, Volume2Icon } from "lucide-react";
+import { ClockIcon, Music2Icon, RefreshCwIcon, TimerIcon, UploadIcon, Volume2Icon, XIcon } from "lucide-react";
 import { memo, useEffect, useRef, useState } from "react";
 
 const LIKED_SONGS_URL = "https://music.youtube.com/playlist?list=LM";
 const SYNC_MAX_ITEMS = 1000;
 
 const ReplayGainButton = memo(function ReplayGainButton() {
-  const [isLoading, setIsLoading] = useState(false);
+  const [isStarting, setIsStarting] = useState(false);
+  const [isCancelling, setIsCancelling] = useState(false);
+  const [isRunning, setIsRunning] = useState(false);
 
-  const handleClick = async () => {
-    setIsLoading(true);
+  useEffect(() => {
+    if (!isRunning) {
+      // Check once on mount (or after scan ends) to detect an already-running scan
+      getReplayGainStatus().then((status) => {
+        if (status?.running) setIsRunning(true);
+      });
+      return;
+    }
+
+    // Poll while running to detect when scan finishes
+    const interval = setInterval(async () => {
+      const status = await getReplayGainStatus();
+      if (status && !status.running) setIsRunning(false);
+    }, 2000);
+
+    return () => clearInterval(interval);
+  }, [isRunning]);
+
+  const handleStart = async () => {
+    setIsStarting(true);
     try {
       const ok = await startReplayGainScan();
       if (ok) {
+        setIsRunning(true);
         showSuccessToast("ReplayGain", "Scan started");
       } else {
         showErrorToast("ReplayGain", "Failed to start scan");
       }
     } finally {
-      setIsLoading(false);
+      setIsStarting(false);
     }
   };
+
+  const handleCancel = async () => {
+    setIsCancelling(true);
+    try {
+      await cancelReplayGainScan();
+      setIsRunning(false);
+    } finally {
+      setIsCancelling(false);
+    }
+  };
+
+  if (isRunning) {
+    return (
+      <Tooltip content="Cancel ReplayGain scan" offset={14}>
+        <Button
+          radius="lg"
+          variant="flat"
+          color="danger"
+          onPress={handleCancel}
+          isLoading={isCancelling}
+          startContent={!isCancelling && <XIcon className="h-4 w-4" />}
+        >
+          Cancel
+        </Button>
+      </Tooltip>
+    );
+  }
 
   return (
     <Tooltip content="Re-apply ReplayGain tags to all files" offset={14}>
       <Button
         radius="lg"
         variant="flat"
-        onPress={handleClick}
-        isLoading={isLoading}
-        startContent={!isLoading && <Volume2Icon className="h-4 w-4" />}
+        onPress={handleStart}
+        isLoading={isStarting}
+        startContent={!isStarting && <Volume2Icon className="h-4 w-4" />}
       >
         ReplayGain
       </Button>

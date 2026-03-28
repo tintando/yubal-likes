@@ -26,3 +26,11 @@ async def start_replaygain_scan(scanner: ReplayGainScannerDep) -> ReplayGainScan
         raise HTTPException(status_code=409, detail="Scan already in progress")
     scanner.start_scan()
     return ReplayGainScanResponse(status="started")
+
+
+@router.post("/cancel")
+async def cancel_replaygain_scan(scanner: ReplayGainScannerDep) -> ReplayGainScanResponse:
+    if not scanner.is_running:
+        raise HTTPException(status_code=409, detail="No scan in progress")
+    scanner.cancel_scan()
+    return ReplayGainScanResponse(status="cancelled")
