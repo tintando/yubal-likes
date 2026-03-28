@@ -48,6 +48,7 @@ class GDriveService:
         self._folder_cache: dict[str, str] = {}
         self._files_cache: dict[str, dict[str, int]] = {}
         self._file_ids: dict[str, dict[str, str]] = {}
+        self._duplicate_ids: list[str] = []
 
     def _build_service(self):
         credentials = Credentials.from_authorized_user_file(
@@ -104,6 +105,7 @@ class GDriveService:
         self._folder_cache.clear()
         self._files_cache.clear()
         self._file_ids.clear()
+        self._duplicate_ids.clear()
 
         # Collect all files to upload
         files = sorted(f for f in Path(local_path).rglob("*") if f.is_file())
@@ -158,16 +160,34 @@ class GDriveService:
                     },
                 )
             else:
-                logger.info(
-                    "Uploading: %s",
-                    rel,
-                    extra={
-                        "current": i,
-                        "total": total,
-                        "event_type": "file_upload",
-                    },
+                # Check if file already exists on Drive (size mismatch) → update it
+                existing_id = (
+                    self._file_ids.get(parent_id, {}).get(file_path.name)
+                    if remote_size is not None
+                    else None
                 )
-                self._upload_file(service, file_path, parent_id)
+                if existing_id:
+                    logger.info(
+                        "Updating (size changed): %s",
+                        rel,
+                        extra={
+                            "current": i,
+                            "total": total,
+                            "event_type": "file_upload",
+                        },
+                    )
+                    self._update_file(service, file_path, existing_id)
+                else:
+                    logger.info(
+                        "Uploading: %s",
+                        rel,
+                        extra={
+                            "current": i,
+                            "total": total,
+                            "event_type": "file_upload",
+                        },
+                    )
+                    self._upload_file(service, file_path, parent_id)
                 uploaded += 1
                 bytes_uploaded += local_size
                 # Update cache after upload
@@ -203,7 +223,18 @@ class GDriveService:
     def _cleanup_orphans(
         self, service, local_path: Path, cancel_token: CancelToken
     ) -> int:
-        """Delete remote files that no longer exist locally."""
+        """Delete remote files that no longer exist locally, and remove duplicates."""
+        # Clean up duplicate files first
+        if self._duplicate_ids:
+            logger.info("Removing %d duplicate files from Drive", len(self._duplicate_ids))
+            for dup_id in self._duplicate_ids:
+                if cancel_token.is_cancelled:
+                    break
+                try:
+                    self.delete_file(service, dup_id)
+                except Exception:
+                    logger.warning("Failed to delete duplicate %s", dup_id, exc_info=True)
+
         # Reverse mapping: folder_id -> relative path
         id_to_path: dict[str, str] = {self._root_folder_id: ""}
         for path, folder_id in self._folder_cache.items():
@@ -356,10 +387,23 @@ class GDriveService:
                 if parent and parent in folder_paths:
                     if parent not in self._files_cache:
                         self._files_cache[parent] = {}
-                    self._files_cache[parent][f["name"]] = int(f.get("size", 0))
                     if parent not in self._file_ids:
                         self._file_ids[parent] = {}
-                    self._file_ids[parent][f["name"]] = f["id"]
+                    size = int(f.get("size", 0))
+                    name = f["name"]
+                    fid = f["id"]
+                    existing_size = self._files_cache[parent].get(name)
+                    if existing_size is not None:
+                        # Duplicate detected — keep the larger one
+                        if size >= existing_size:
+                            self._duplicate_ids.append(self._file_ids[parent][name])
+                            self._files_cache[parent][name] = size
+                            self._file_ids[parent][name] = fid
+                        else:
+                            self._duplicate_ids.append(fid)
+                    else:
+                        self._files_cache[parent][name] = size
+                        self._file_ids[parent][name] = fid
             page_token = resp.get("nextPageToken")
             if not page_token:
                 break
@@ -441,6 +485,12 @@ class GDriveService:
             self.delete_file(service, file_id)
             return True
         return False
+
+    @staticmethod
+    def _update_file(service, file_path: Path, file_id: str) -> None:
+        """Update an existing file's content on Drive."""
+        media = MediaFileUpload(str(file_path), resumable=True)
+        service.files().update(fileId=file_id, media_body=media).execute()
 
     @staticmethod
     def _upload_file(service, file_path: Path, parent_id: str) -> str:

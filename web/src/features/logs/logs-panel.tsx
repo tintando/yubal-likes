@@ -85,7 +85,7 @@ export function LogsPanel({ jobs = [] }: Props) {
           >
             <PanelContent
               ref={containerRef}
-              height="min-h-0 flex-1"
+              height="max-h-96"
               className="logs-container space-y-0.5 p-4 font-mono text-xs"
             >
               {lines.length === 0 ? (
