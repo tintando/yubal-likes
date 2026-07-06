@@ -3,8 +3,9 @@
 import asyncio
 import logging
 
-from fastapi import APIRouter, Request
+from fastapi import APIRouter, HTTPException, Request
 from fastapi.responses import RedirectResponse
+from yubal import CancelToken
 
 from yubal_api.api.deps import SettingsDep
 from yubal_api.schemas.drive import (
@@ -12,6 +13,7 @@ from yubal_api.schemas.drive import (
     DriveCredentialsResponse,
     DriveCredentialsUploadRequest,
     DriveStatusResponse,
+    DriveUploadResponse,
 )
 from yubal_api.services.gdrive_service import GDriveService
 
@@ -33,6 +35,41 @@ async def drive_status(settings: SettingsDep) -> DriveStatusResponse:
         has_client_secrets=settings.gdrive_client_configured,
         authorized=settings.gdrive_authorized,
         folder_id=settings.gdrive_folder_id,
+    )
+
+
+@router.post("/upload")
+async def upload_library_to_drive(
+    request: Request, settings: SettingsDep
+) -> DriveUploadResponse:
+    """Manually upload the local library to Drive (retry after a failed upload).
+
+    Incremental: already-uploaded files are skipped, same as the post-sync
+    upload phase.
+    """
+    services = request.app.state.services
+    gdrive = services.gdrive_service
+    if gdrive is None:
+        raise HTTPException(status_code=400, detail="Google Drive is not authorized")
+
+    if any(job.status.is_active for job in services.job_store.get_all()):
+        raise HTTPException(
+            status_code=409,
+            detail="A job is running; it will upload to Drive when it finishes",
+        )
+
+    try:
+        result = await asyncio.to_thread(
+            gdrive.upload_directory, settings.data, CancelToken()
+        )
+    except Exception as e:
+        logger.error("Manual Drive upload failed: %s", e)
+        raise HTTPException(status_code=502, detail=f"Drive upload failed: {e}") from e
+
+    return DriveUploadResponse(
+        files_uploaded=result.files_uploaded,
+        files_skipped=result.files_skipped,
+        files_cleaned=result.files_cleaned,
     )
 
 

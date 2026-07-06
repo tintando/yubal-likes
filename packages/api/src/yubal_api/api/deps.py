@@ -21,6 +21,7 @@ from yubal_api.db.history_repository import HistoryRepository
 from yubal_api.db.keep_list_repository import KeepListRepository
 from yubal_api.db.likes_snapshot_repository import LikesSnapshotRepository
 from yubal_api.services.gdrive_service import GDriveService
+from yubal_api.services.library_service import LibraryService
 from yubal_api.services.likes_service import LikesService
 from yubal_api.services.replaygain_scanner import ReplayGainScanner
 from yubal_api.services.job_event_bus import JobEventBus
@@ -138,6 +139,15 @@ def _get_likes_snapshot_repository(services: ServicesDep) -> LikesSnapshotReposi
 LikesSnapshotRepositoryDep = Annotated[
     LikesSnapshotRepository, Depends(_get_likes_snapshot_repository)
 ]
+
+
+def _get_library_service(
+    settings: SettingsDep, gdrive_service: GDriveServiceDep
+) -> LibraryService:
+    return LibraryService(base_path=settings.data, gdrive_service=gdrive_service)
+
+
+LibraryServiceDep = Annotated[LibraryService, Depends(_get_library_service)]
 
 
 def _get_likes_service(

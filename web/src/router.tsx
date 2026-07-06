@@ -3,6 +3,7 @@
 import { Footer } from "@/components/layout/footer";
 import { Header } from "@/components/layout/header";
 import { JobsPage } from "@/pages/jobs";
+import { LibraryPage } from "@/pages/library";
 import { LikesManagerPage } from "@/pages/likes-manager";
 import { HeroUIProvider, ToastProvider } from "@heroui/react";
 import {
@@ -62,7 +63,13 @@ const likesRoute = createRoute({
   component: LikesManagerPage,
 });
 
-const routeTree = rootRoute.addChildren([jobsRoute, likesRoute]);
+const libraryRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/library",
+  component: LibraryPage,
+});
+
+const routeTree = rootRoute.addChildren([jobsRoute, likesRoute, libraryRoute]);
 
 export const router = createRouter({ routeTree });
 

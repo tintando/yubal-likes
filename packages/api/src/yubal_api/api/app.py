@@ -36,6 +36,7 @@ from yubal_api.api.routes import (
     imports,
     info,
     jobs,
+    library,
     likes,
     logs,
     replaygain,
@@ -254,6 +255,7 @@ def create_api_router() -> APIRouter:
     api_router.include_router(history.router)
     api_router.include_router(imports.router)
     api_router.include_router(likes.router)
+    api_router.include_router(library.router)
     return api_router
 
 

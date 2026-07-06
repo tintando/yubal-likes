@@ -5,6 +5,7 @@ import {
   getDriveAuthUrl,
   getDriveStatus,
   uploadDriveCredentials,
+  uploadLibraryToDrive,
 } from "@/api/drive";
 import { showErrorToast, showSuccessToast } from "@/lib/toast";
 
@@ -13,6 +14,7 @@ interface UseDriveReturn {
   isUploading: boolean;
   isDeleting: boolean;
   isAuthorizing: boolean;
+  isSyncing: boolean;
   fileInputRef: React.RefObject<HTMLInputElement | null>;
   handleFileSelect: (e: React.ChangeEvent<HTMLInputElement>) => Promise<void>;
   handleDropdownAction: (key: React.Key) => void;
@@ -31,6 +33,7 @@ export function useDrive(): UseDriveReturn {
   const [isUploading, setIsUploading] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [isAuthorizing, setIsAuthorizing] = useState(false);
+  const [isSyncing, setIsSyncing] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -114,6 +117,22 @@ export function useDrive(): UseDriveReturn {
     fileInputRef.current?.click();
   }, []);
 
+  const handleRetryUpload = useCallback(async () => {
+    setIsSyncing(true);
+    try {
+      const result = await uploadLibraryToDrive();
+      showSuccessToast(
+        "Drive upload",
+        `${result.files_uploaded} uploaded, ${result.files_skipped} already up to date`,
+      );
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : "Drive upload failed";
+      showErrorToast("Drive upload", msg);
+    } finally {
+      setIsSyncing(false);
+    }
+  }, []);
+
   const handleDropdownAction = useCallback(
     (key: React.Key) => {
       if (key === "upload") {
@@ -122,9 +141,11 @@ export function useDrive(): UseDriveReturn {
         handleAuthorize();
       } else if (key === "disconnect") {
         handleDelete();
+      } else if (key === "retry-upload") {
+        handleRetryUpload();
       }
     },
-    [triggerFileUpload, handleAuthorize, handleDelete],
+    [triggerFileUpload, handleAuthorize, handleDelete, handleRetryUpload],
   );
 
   return {
@@ -132,6 +153,7 @@ export function useDrive(): UseDriveReturn {
     isUploading,
     isDeleting,
     isAuthorizing,
+    isSyncing,
     fileInputRef,
     handleFileSelect,
     handleDropdownAction,

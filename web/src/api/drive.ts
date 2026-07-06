@@ -38,3 +38,21 @@ export async function getDriveAuthUrl(): Promise<string | null> {
   if (error) return null;
   return data.url;
 }
+
+export interface DriveUploadResult {
+  files_uploaded: number;
+  files_skipped: number;
+  files_cleaned: number;
+}
+
+export async function uploadLibraryToDrive(): Promise<DriveUploadResult> {
+  const { data, error } = await api.POST("/api/drive/upload");
+  if (error) {
+    const detail =
+      error && typeof error === "object" && "detail" in error
+        ? String((error as { detail: unknown }).detail)
+        : "Drive upload failed";
+    throw new Error(detail);
+  }
+  return data;
+}

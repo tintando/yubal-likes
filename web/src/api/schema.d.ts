@@ -310,6 +310,29 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/drive/upload": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Upload Library To Drive
+         * @description Manually upload the local library to Drive (retry after a failed upload).
+         *
+         *     Incremental: already-uploaded files are skipped, same as the post-sync
+         *     upload phase.
+         */
+        post: operations["upload_library_to_drive_api_drive_upload_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/drive/credentials": {
         parameters: {
             query?: never;
@@ -736,6 +759,46 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/library/search": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Search Library
+         * @description Search local audio files by name (all words must match).
+         */
+        get: operations["search_library_api_library_search_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/library/delete": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Delete Library File
+         * @description Delete a local audio file (plus companion .lrc and Drive copies).
+         */
+        post: operations["delete_library_file_api_library_delete_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -963,6 +1026,18 @@ export interface components {
             folder_id: string;
         };
         /**
+         * DriveUploadResponse
+         * @description Result of a manual library upload to Drive.
+         */
+        DriveUploadResponse: {
+            /** Files Uploaded */
+            files_uploaded: number;
+            /** Files Skipped */
+            files_skipped: number;
+            /** Files Cleaned */
+            files_cleaned: number;
+        };
+        /**
          * ErrorResponse
          * @description Standard error response format.
          */
@@ -1079,6 +1154,44 @@ export interface components {
         JobsResponse: {
             /** Jobs */
             jobs: components["schemas"]["Job"][];
+        };
+        /** LibraryDeleteRequest */
+        LibraryDeleteRequest: {
+            /** Path */
+            path: string;
+        };
+        /** LibraryDeleteResponse */
+        LibraryDeleteResponse: {
+            /** Files Deleted */
+            files_deleted: string[];
+            /** Drive Files Deleted */
+            drive_files_deleted: number;
+        };
+        /** LibraryFile */
+        LibraryFile: {
+            /** Path */
+            path: string;
+            /** Size */
+            size: number;
+            /** Modified At */
+            modified_at?: string | null;
+            /**
+             * Has Lyrics
+             * @default false
+             */
+            has_lyrics: boolean;
+            /**
+             * In Playlist
+             * @default false
+             */
+            in_playlist: boolean;
+        };
+        /** LibrarySearchResponse */
+        LibrarySearchResponse: {
+            /** Items */
+            items: components["schemas"]["LibraryFile"][];
+            /** Total */
+            total: number;
         };
         /** LikedSong */
         LikedSong: {
@@ -2213,6 +2326,26 @@ export interface operations {
             };
         };
     };
+    upload_library_to_drive_api_drive_upload_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DriveUploadResponse"];
+                };
+            };
+        };
+    };
     upload_credentials_api_drive_credentials_post: {
         parameters: {
             query?: never;
@@ -2883,6 +3016,70 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["DismissChangeResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    search_library_api_library_search_get: {
+        parameters: {
+            query: {
+                q: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LibrarySearchResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    delete_library_file_api_library_delete_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["LibraryDeleteRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LibraryDeleteResponse"];
                 };
             };
             /** @description Validation Error */

@@ -22,6 +22,7 @@ import {
 import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
 import {
   Disc3Icon,
+  FolderSearchIcon,
   HeartIcon,
   RefreshCwIcon,
   RocketIcon,
@@ -51,6 +52,7 @@ export function Header() {
     isUploading: isDriveUploading,
     isDeleting: isDriveDeleting,
     isAuthorizing: isDriveAuthorizing,
+    isSyncing: isDriveSyncing,
     fileInputRef: driveFileInputRef,
     handleFileSelect: handleDriveFileSelect,
     handleDropdownAction: handleDriveDropdownAction,
@@ -61,7 +63,8 @@ export function Header() {
   const navigate = useNavigate();
   const routerState = useRouterState();
   const currentPath = routerState.location.pathname;
-  const activeTab = currentPath === "/likes" ? "/likes" : "/";
+  const activeTab =
+    currentPath === "/likes" || currentPath === "/library" ? currentPath : "/";
 
   return (
     <Navbar
@@ -119,6 +122,15 @@ export function Header() {
                 </div>
               }
             />
+            <Tab
+              key="/library"
+              title={
+                <div className="flex items-center gap-1.5">
+                  <FolderSearchIcon className="h-3.5 w-3.5" />
+                  <span>Library</span>
+                </div>
+              }
+            />
           </Tabs>
         </NavbarItem>
       </NavbarContent>
@@ -172,6 +184,7 @@ export function Header() {
             isUploading={isDriveUploading}
             isDeleting={isDriveDeleting}
             isAuthorizing={isDriveAuthorizing}
+            isSyncing={isDriveSyncing}
             onDropdownAction={handleDriveDropdownAction}
             onUploadClick={triggerDriveFileUpload}
           />
@@ -222,6 +235,20 @@ export function Header() {
           </HeroUILink>
         </NavbarMenuItem>
         <NavbarMenuItem>
+          <HeroUILink
+            href="/library"
+            color={activeTab === "/library" ? "primary" : "foreground"}
+            className="w-full"
+            size="lg"
+            onPress={() => {
+              navigate({ to: "/library" });
+              setIsMenuOpen(false);
+            }}
+          >
+            Library
+          </HeroUILink>
+        </NavbarMenuItem>
+        <NavbarMenuItem>
           <CookieDropdown
             variant="mobile"
             cookiesConfigured={cookiesConfigured}
@@ -239,6 +266,7 @@ export function Header() {
               isUploading={isDriveUploading}
               isDeleting={isDriveDeleting}
               isAuthorizing={isDriveAuthorizing}
+              isSyncing={isDriveSyncing}
               onDropdownAction={handleDriveDropdownAction}
               onUploadClick={triggerDriveFileUpload}
             />

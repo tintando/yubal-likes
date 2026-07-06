@@ -9,6 +9,7 @@ import {
   Tooltip,
 } from "@heroui/react";
 import {
+  CloudUploadIcon,
   HardDriveIcon,
   KeyRoundIcon,
   LogOutIcon,
@@ -22,6 +23,7 @@ interface DriveDropdownProps {
   isUploading: boolean;
   isDeleting: boolean;
   isAuthorizing: boolean;
+  isSyncing?: boolean;
   onDropdownAction: (key: React.Key) => void;
   onUploadClick: () => void;
   variant: "desktop" | "mobile";
@@ -32,6 +34,7 @@ export function DriveDropdown({
   isUploading,
   isDeleting,
   isAuthorizing,
+  isSyncing = false,
   onDropdownAction,
   onUploadClick,
   variant,
@@ -49,7 +52,7 @@ export function DriveDropdown({
               size="sm"
               variant="light"
               aria-label="Drive options"
-              isLoading={isDeleting || isAuthorizing}
+              isLoading={isDeleting || isAuthorizing || isSyncing}
             >
               <HardDriveIcon className="h-5 w-5 text-blue-500 dark:text-blue-300" />
             </Button>
@@ -177,6 +180,13 @@ function NeedsAuthMenu({ onAction }: MenuProps) {
 function AuthorizedMenu({ onAction }: MenuProps) {
   return (
     <DropdownMenu aria-label="Drive actions" onAction={onAction}>
+      <DropdownItem
+        key="retry-upload"
+        startContent={<CloudUploadIcon className="h-4 w-4" />}
+        description="Upload files missed by a failed sync"
+      >
+        Upload library now
+      </DropdownItem>
       <DropdownItem
         key="reauthorize"
         startContent={<RefreshCwIcon className="h-4 w-4" />}

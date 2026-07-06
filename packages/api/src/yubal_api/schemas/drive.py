@@ -30,3 +30,11 @@ class DriveAuthUrlResponse(BaseModel):
     """Drive OAuth2 authorization URL response."""
 
     url: str
+
+
+class DriveUploadResponse(BaseModel):
+    """Result of a manual library upload to Drive."""
+
+    files_uploaded: int
+    files_skipped: int
+    files_cleaned: int
