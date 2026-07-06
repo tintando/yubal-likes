@@ -85,6 +85,7 @@ class PlaylistDownloadService:
         composer: PlaylistArtifactsProtocol | None = None,
         replaygain: ReplayGainProtocol | None = None,
         cookies_path: Path | None = None,
+        authuser: str = "0",
     ) -> None:
         """Initialize the service.
 
@@ -96,12 +97,14 @@ class PlaylistDownloadService:
             composer: Optional composer (creates default if not provided).
             replaygain: Optional ReplayGain service (creates default if not provided).
             cookies_path: Optional path to cookies.txt for authentication.
+            authuser: Google account index used to disambiguate cookies that
+                contain multiple signed-in accounts ("0" = primary).
         """
         self._config = config
 
         # Create client if needed
         if client is None:
-            client = YTMusicClient(cookies_path=cookies_path)
+            client = YTMusicClient(cookies_path=cookies_path, authuser=authuser)
 
         # Create services
         self._extractor = extractor or MetadataExtractorService(

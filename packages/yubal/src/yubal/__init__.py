@@ -69,6 +69,7 @@ from yubal.utils.url import is_single_track_url, is_supported_url, parse_playlis
 def create_extractor(
     config: APIConfig | None = None,
     cookies_path: Path | None = None,
+    authuser: str = "0",
 ) -> MetadataExtractorService:
     """Create a configured metadata extractor.
 
@@ -101,7 +102,9 @@ def create_extractor(
         extractor = create_extractor(cookies_path=Path("cookies.txt"))
         ```
     """
-    client = _YTMusicClient(config=config, cookies_path=cookies_path)
+    client = _YTMusicClient(
+        config=config, cookies_path=cookies_path, authuser=authuser
+    )
     return MetadataExtractorService(client)
 
 
@@ -146,6 +149,7 @@ def create_downloader(
 def create_playlist_downloader(
     config: PlaylistDownloadConfig,
     cookies_path: Path | None = None,
+    authuser: str = "0",
 ) -> PlaylistDownloadService:
     """Create a configured playlist download service.
 
@@ -183,7 +187,9 @@ def create_playlist_downloader(
         service = create_playlist_downloader(config, cookies_path=Path("cookies.txt"))
         ```
     """
-    return PlaylistDownloadService(config, cookies_path=cookies_path)
+    return PlaylistDownloadService(
+        config, cookies_path=cookies_path, authuser=authuser
+    )
 
 
 __all__ = [

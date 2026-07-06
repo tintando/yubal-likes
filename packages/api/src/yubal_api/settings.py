@@ -167,6 +167,23 @@ class Settings(BaseSettings):
         return self.ytdlp_dir / "cookies.txt"
 
     @property
+    def authuser_file(self) -> Path:
+        """File storing the selected x-goog-authuser index for cookies.txt."""
+        return self.ytdlp_dir / "authuser.txt"
+
+    def get_authuser(self) -> str:
+        """Read the selected Google account index. Defaults to "0"."""
+        try:
+            value = self.authuser_file.read_text().strip()
+        except (OSError, UnicodeDecodeError):
+            return "0"
+        # The value goes into the x-goog-authuser header; never pass through
+        # anything that isn't a plain non-negative integer.
+        if not (value.isascii() and value.isdigit()):
+            return "0"
+        return value
+
+    @property
     def db_path(self) -> Path:
         return self.config / "yubal" / "yubal.db"
 

@@ -237,9 +237,54 @@ export interface paths {
         post: operations["upload_cookies_api_cookies_post"];
         /**
          * Delete Cookies
-         * @description Delete the cookies file.
+         * @description Delete the cookies file and the account selection that goes with it.
          */
         delete: operations["delete_cookies_api_cookies_delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/cookies/accounts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Accounts
+         * @description Discover Google accounts available with the current cookies file.
+         *
+         *     Browser cookie exports include session data for every account signed in
+         *     to that browser. The ``x-goog-authuser`` header tells YouTube which one
+         *     to use; this endpoint probes indices 0..4 and returns the names of any
+         *     accounts that respond, so the user can pick the right one.
+         */
+        get: operations["list_accounts_api_cookies_accounts_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/cookies/account": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Select Account
+         * @description Persist the chosen Google account index for cookies.txt.
+         */
+        put: operations["select_account_api_cookies_account_put"];
+        post?: never;
+        delete?: never;
         options?: never;
         head?: never;
         patch?: never;
@@ -762,12 +807,46 @@ export interface components {
          */
         ContentKind: "album" | "playlist" | "track";
         /**
+         * CookiesAccount
+         * @description One Google account discovered in the cookies file.
+         */
+        CookiesAccount: {
+            /** Authuser */
+            authuser: string;
+            /** Accountname */
+            accountName: string;
+            /** Channelhandle */
+            channelHandle?: string | null;
+            /** Accountphotourl */
+            accountPhotoUrl?: string | null;
+        };
+        /**
+         * CookiesAccountSelectRequest
+         * @description Request to set the active Google account.
+         */
+        CookiesAccountSelectRequest: {
+            /** Authuser */
+            authuser: string;
+        };
+        /**
+         * CookiesAccountsResponse
+         * @description Discovered accounts and currently selected authuser index.
+         */
+        CookiesAccountsResponse: {
+            /** Accounts */
+            accounts: components["schemas"]["CookiesAccount"][];
+            /** Selected */
+            selected: string;
+        };
+        /**
          * CookiesStatusResponse
          * @description Cookies status response model.
          */
         CookiesStatusResponse: {
             /** Configured */
             configured: boolean;
+            /** Authuser */
+            authuser?: string | null;
         };
         /**
          * CookiesUploadRequest
@@ -2011,6 +2090,59 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["CookiesUploadResponse"];
+                };
+            };
+        };
+    };
+    list_accounts_api_cookies_accounts_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CookiesAccountsResponse"];
+                };
+            };
+        };
+    };
+    select_account_api_cookies_account_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CookiesAccountSelectRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CookiesUploadResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };

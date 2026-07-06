@@ -30,7 +30,7 @@ _thumbnail_urls: dict[str, str] = {}
 
 def _create_ytm_client(settings) -> YTMusicClient:
     cookies_path = settings.cookies_file if settings.cookies_file.exists() else None
-    return YTMusicClient(cookies_path=cookies_path)
+    return YTMusicClient(cookies_path=cookies_path, authuser=settings.get_authuser())
 
 
 def _best_thumbnail(thumbnails: list[Thumbnail], size: int = 226) -> str | None:

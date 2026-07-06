@@ -2,6 +2,7 @@
 
 import asyncio
 import logging
+from collections.abc import Callable
 from datetime import UTC, datetime
 from functools import partial
 from pathlib import Path
@@ -66,6 +67,7 @@ class JobExecutor:
         gdrive_service: GDriveService | None = None,
         history_repository: HistoryRepository | None = None,
         keep_list_repository: KeepListRepository | None = None,
+        authuser_provider: Callable[[], str] | None = None,
     ) -> None:
         """Initialize the job executor.
 
@@ -98,6 +100,7 @@ class JobExecutor:
         self._gdrive_service = gdrive_service
         self._history_repository = history_repository
         self._keep_list_repository = keep_list_repository
+        self._authuser_provider = authuser_provider or (lambda: "0")
 
         # Track background tasks to prevent GC during execution
         self._background_tasks: set[asyncio.Task[Any]] = set()
@@ -105,6 +108,18 @@ class JobExecutor:
         self._cancel_tokens: dict[str, CancelToken] = {}
         # Map job_id -> sync history UUID for orphan resolution
         self._current_sync_ids: dict[str, UUID] = {}
+
+    def _get_authuser(self) -> str:
+        """Read the active Google account index, freshly each call.
+
+        Reading on demand lets the user switch accounts without restarting
+        the executor — the next job picks up the new selection.
+        """
+        try:
+            return self._authuser_provider()
+        except Exception:  # never block jobs on auth lookup
+            logger.warning("authuser_provider raised; falling back to '0'")
+            return "0"
 
     def create_and_start_job(
         self,
@@ -305,6 +320,7 @@ class JobExecutor:
                     self._download_ugc,
                     self._cache_path,
                     self._audio_quality,
+                    authuser=self._get_authuser(),
                 )
                 result = await asyncio.to_thread(
                     sync_service.run,
@@ -456,7 +472,9 @@ class JobExecutor:
                 from yubal.client import YTMusicClient
                 from yubal.services.import_service import FileImportService
 
-                client = YTMusicClient(cookies_path=self._cookies_path)
+                client = YTMusicClient(
+                    cookies_path=self._cookies_path, authuser=self._get_authuser()
+                )
                 import_service = FileImportService(
                     client=client,
                     base_path=self._base_path,

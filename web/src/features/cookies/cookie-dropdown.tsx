@@ -7,7 +7,7 @@ import {
   Link,
   Tooltip,
 } from "@heroui/react";
-import { CookieIcon, Trash2Icon, UploadIcon } from "lucide-react";
+import { CookieIcon, Trash2Icon, UploadIcon, UserIcon } from "lucide-react";
 
 interface CookieDropdownProps {
   cookiesConfigured: boolean;
@@ -91,6 +91,12 @@ interface CookieDropdownMenuProps {
 function CookieDropdownMenu({ onAction }: CookieDropdownMenuProps) {
   return (
     <DropdownMenu aria-label="Cookie actions" onAction={onAction}>
+      <DropdownItem
+        key="switch"
+        startContent={<UserIcon className="h-4 w-4" />}
+      >
+        Switch account
+      </DropdownItem>
       <DropdownItem
         key="upload"
         startContent={<UploadIcon className="h-4 w-4" />}

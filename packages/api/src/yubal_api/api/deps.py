@@ -91,7 +91,9 @@ def _get_playlist_info_service() -> PlaylistInfoService:
     """Get playlist info service for fetching playlist metadata."""
     settings = get_settings()
     cookies_path = settings.cookies_file if settings.cookies_file.exists() else None
-    return PlaylistInfoService(cookies_path=cookies_path)
+    return PlaylistInfoService(
+        cookies_path=cookies_path, authuser=settings.get_authuser()
+    )
 
 
 PlaylistInfoServiceDep = Annotated[

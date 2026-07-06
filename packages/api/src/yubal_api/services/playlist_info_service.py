@@ -35,13 +35,16 @@ class _Classification:
 class PlaylistInfoService:
     """Service to fetch playlist metadata from YouTube Music."""
 
-    def __init__(self, cookies_path: Path | None = None) -> None:
+    def __init__(
+        self, cookies_path: Path | None = None, authuser: str = "0"
+    ) -> None:
         """Initialize the service.
 
         Args:
             cookies_path: Optional path to cookies.txt for authenticated requests.
+            authuser: Google account index for the cookies file.
         """
-        self._client = YTMusicClient(cookies_path=cookies_path)
+        self._client = YTMusicClient(cookies_path=cookies_path, authuser=authuser)
 
     def get_playlist_metadata(self, url: str) -> PlaylistMetadata:
         """Get the metadata of a playlist from its URL.

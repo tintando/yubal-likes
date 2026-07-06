@@ -1,4 +1,5 @@
 import { AnimatedThemeToggler } from "@/components/magicui/animated-theme-toggler";
+import { AccountPickerModal } from "@/features/cookies/account-picker-modal";
 import { CookieDropdown } from "@/features/cookies/cookie-dropdown";
 import { useCookies } from "@/features/cookies/use-cookies";
 import { DriveDropdown } from "@/features/drive/drive-dropdown";
@@ -34,10 +35,16 @@ export function Header() {
     cookiesConfigured,
     isUploading,
     isDeleting,
+    accounts,
+    selectedAuthuser,
+    isLoadingAccounts,
+    isPickerOpen,
     fileInputRef,
     handleFileSelect,
     handleDropdownAction,
     triggerFileUpload,
+    closePicker,
+    pickAccount,
   } = useCookies();
   const {
     status: driveStatus,
@@ -265,6 +272,15 @@ export function Header() {
         accept=".json"
         onChange={handleDriveFileSelect}
         className="hidden"
+      />
+
+      <AccountPickerModal
+        isOpen={isPickerOpen}
+        onClose={closePicker}
+        accounts={accounts}
+        selected={selectedAuthuser}
+        isLoading={isLoadingAccounts}
+        onPick={pickAccount}
       />
     </Navbar>
   );

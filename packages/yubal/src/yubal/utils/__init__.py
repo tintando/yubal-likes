@@ -5,7 +5,11 @@ Not re-exported at the top-level `yubal` package.
 """
 
 from yubal.utils.cleanup import cleanup_part_files
-from yubal.utils.cookies import cookies_to_ytmusic_auth, is_authenticated_cookies
+from yubal.utils.cookies import (
+    cookies_to_ytmusic_auth,
+    is_authenticated_cookies,
+    list_authenticated_accounts,
+)
 from yubal.utils.cover import (
     clear_cover_cache,
     crop_to_square,
@@ -32,6 +36,7 @@ __all__ = [
     "get_cover_cache_size",
     "is_authenticated_cookies",
     "is_single_track_url",
+    "list_authenticated_accounts",
     "parse_playlist_id",
     "parse_video_id",
     "write_playlist_cover",

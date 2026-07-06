@@ -7,10 +7,14 @@ Cookies enable access to private playlists and age-restricted content.
 import asyncio
 
 from fastapi import APIRouter
+from yubal.utils.cookies import list_authenticated_accounts
 
-from yubal_api.api.deps import CookiesFileDep, YtdlpDirDep
+from yubal_api.api.deps import CookiesFileDep, SettingsDep, YtdlpDirDep
 from yubal_api.api.exceptions import CookieValidationError
 from yubal_api.schemas.cookies import (
+    CookiesAccount,
+    CookiesAccountSelectRequest,
+    CookiesAccountsResponse,
     CookiesStatusResponse,
     CookiesUploadRequest,
     CookiesUploadResponse,
@@ -38,10 +42,13 @@ def _validate_netscape_cookies(content: str) -> None:
 
 
 @router.get("/status")
-async def cookies_status(cookies_file: CookiesFileDep) -> CookiesStatusResponse:
+async def cookies_status(
+    cookies_file: CookiesFileDep, settings: SettingsDep
+) -> CookiesStatusResponse:
     """Check if cookies file is configured."""
     exists = await asyncio.to_thread(cookies_file.exists)
-    return CookiesStatusResponse(configured=exists)
+    authuser = settings.get_authuser() if exists else None
+    return CookiesStatusResponse(configured=exists, authuser=authuser)
 
 
 @router.post("")
@@ -49,6 +56,7 @@ async def upload_cookies(
     body: CookiesUploadRequest,
     cookies_file: CookiesFileDep,
     ytdlp_dir: YtdlpDirDep,
+    settings: SettingsDep,
 ) -> CookiesUploadResponse:
     """Upload cookies.txt content (Netscape format).
 
@@ -59,12 +67,52 @@ async def upload_cookies(
 
     await asyncio.to_thread(ytdlp_dir.mkdir, parents=True, exist_ok=True)
     await asyncio.to_thread(cookies_file.write_text, body.content)
+
+    # Reset selected account on new upload — old index may not match new cookies.
+    await asyncio.to_thread(settings.authuser_file.unlink, missing_ok=True)
+
     return CookiesUploadResponse(status="ok")
 
 
 @router.delete("")
-async def delete_cookies(cookies_file: CookiesFileDep) -> CookiesUploadResponse:
-    """Delete the cookies file."""
-    if await asyncio.to_thread(cookies_file.exists):
-        await asyncio.to_thread(cookies_file.unlink)
+async def delete_cookies(
+    cookies_file: CookiesFileDep, settings: SettingsDep
+) -> CookiesUploadResponse:
+    """Delete the cookies file and the account selection that goes with it."""
+    await asyncio.to_thread(cookies_file.unlink, missing_ok=True)
+    await asyncio.to_thread(settings.authuser_file.unlink, missing_ok=True)
+    return CookiesUploadResponse(status="ok")
+
+
+@router.get("/accounts")
+async def list_accounts(
+    cookies_file: CookiesFileDep, settings: SettingsDep
+) -> CookiesAccountsResponse:
+    """Discover Google accounts available with the current cookies file.
+
+    Browser cookie exports include session data for every account signed in
+    to that browser. The ``x-goog-authuser`` header tells YouTube which one
+    to use; this endpoint probes indices 0..4 and returns the names of any
+    accounts that respond, so the user can pick the right one.
+    """
+    if not await asyncio.to_thread(cookies_file.exists):
+        return CookiesAccountsResponse(accounts=[], selected=settings.get_authuser())
+
+    raw = await asyncio.to_thread(list_authenticated_accounts, cookies_file)
+    accounts = [CookiesAccount.model_validate(a) for a in raw]
+    return CookiesAccountsResponse(accounts=accounts, selected=settings.get_authuser())
+
+
+@router.put("/account")
+async def select_account(
+    body: CookiesAccountSelectRequest,
+    settings: SettingsDep,
+    ytdlp_dir: YtdlpDirDep,
+) -> CookiesUploadResponse:
+    """Persist the chosen Google account index for cookies.txt."""
+    authuser = body.authuser.strip()
+    if not (authuser.isascii() and authuser.isdigit()):
+        raise CookieValidationError("authuser must be a non-negative integer")
+    await asyncio.to_thread(ytdlp_dir.mkdir, parents=True, exist_ok=True)
+    await asyncio.to_thread(settings.authuser_file.write_text, authuser)
     return CookiesUploadResponse(status="ok")

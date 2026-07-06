@@ -169,7 +169,9 @@ def create_services(
 
     # Create subscription service
     cookies_path = settings.cookies_file if settings.cookies_file.exists() else None
-    playlist_info = PlaylistInfoService(cookies_path=cookies_path)
+    playlist_info = PlaylistInfoService(
+        cookies_path=cookies_path, authuser=settings.get_authuser()
+    )
     subscription_service = SubscriptionService(
         repository=repository,
         playlist_info=playlist_info,
@@ -200,6 +202,7 @@ def create_services(
         gdrive_service=gdrive_service,
         history_repository=history_repository,
         keep_list_repository=keep_list_repository,
+        authuser_provider=settings.get_authuser,
     )
 
     # Create ReplayGain scanner

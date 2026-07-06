@@ -166,11 +166,16 @@ def generate_sapisidhash(sapisid: str, origin: str = YTM_ORIGIN) -> str:
     return f"SAPISIDHASH {timestamp}_{sha1_hash}"
 
 
-def cookies_to_ytmusic_auth(cookies_path: Path) -> dict[str, str] | None:
+def cookies_to_ytmusic_auth(
+    cookies_path: Path, authuser: str = "0"
+) -> dict[str, str] | None:
     """Convert cookies.txt to ytmusicapi authentication headers.
 
     Args:
         cookies_path: Path to Netscape format cookies.txt file.
+        authuser: Google account index when multiple accounts share cookies.
+            Browser exports include session data for every signed-in account;
+            this header tells YouTube which one to use ("0" = primary).
 
     Returns:
         Dict with auth headers for ytmusicapi, or None if auth not possible.
@@ -227,10 +232,75 @@ def cookies_to_ytmusic_auth(cookies_path: Path) -> dict[str, str] | None:
         "accept": "*/*",
         "authorization": authorization,
         "content-type": "application/json",
-        "x-goog-authuser": "0",
+        "x-goog-authuser": authuser,
         "x-origin": YTM_ORIGIN,
         "cookie": cookie_header,
     }
+
+
+def list_authenticated_accounts(
+    cookies_path: Path, max_authuser: int = 5
+) -> list[dict[str, str | None]]:
+    """Discover Google accounts available for the given cookies file.
+
+    Probes ``x-goog-authuser`` indices 0..max_authuser-1 in parallel by
+    calling ``YTMusic.get_account_info()`` for each one. Indices that respond
+    with a valid account name are returned, deduplicated. The same browser
+    cookies grant access to every account currently signed into that browser;
+    the authuser header selects which one YouTube uses for a given request.
+
+    Args:
+        cookies_path: Path to Netscape format cookies.txt file.
+        max_authuser: Number of indices to probe (0..max_authuser-1).
+
+    Returns:
+        List of dicts with keys ``authuser``, ``accountName``,
+        ``channelHandle``, ``accountPhotoUrl``. Empty list if no account
+        responds (e.g. cookies invalid).
+    """
+    # Local import to avoid pulling ytmusicapi for callers that only parse cookies.
+    from concurrent.futures import ThreadPoolExecutor
+
+    from ytmusicapi import YTMusic
+
+    if cookies_to_ytmusic_auth(cookies_path) is None:
+        return []
+
+    def probe(index: int) -> dict[str, str | None] | None:
+        auth = cookies_to_ytmusic_auth(cookies_path, authuser=str(index))
+        if auth is None:
+            return None
+        try:
+            info = YTMusic(auth=auth).get_account_info()
+            name = info.get("accountName")
+        except Exception as e:  # probing: any failure means "no account here"
+            logger.debug("authuser=%d probe failed: %s", index, e)
+            return None
+        if not name:
+            return None
+        return {
+            "authuser": str(index),
+            "accountName": name,
+            "channelHandle": info.get("channelHandle"),
+            "accountPhotoUrl": info.get("accountPhotoUrl"),
+        }
+
+    with ThreadPoolExecutor(max_workers=max_authuser) as pool:
+        results = pool.map(probe, range(max_authuser))
+
+    # YouTube may answer with the default account for indices that don't
+    # exist; keep only the lowest index for each distinct account.
+    accounts: list[dict[str, str | None]] = []
+    seen: set[tuple[str | None, str | None]] = set()
+    for account in results:
+        if account is None:
+            continue
+        key = (account["accountName"], account["channelHandle"])
+        if key in seen:
+            continue
+        seen.add(key)
+        accounts.append(account)
+    return accounts
 
 
 def is_authenticated_cookies(cookies_path: Path) -> bool:

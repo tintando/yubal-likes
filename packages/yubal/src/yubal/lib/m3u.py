@@ -103,7 +103,6 @@ def write_m3u(
     )
     m3u_path = playlists_dir / f"{filename}.m3u"
 
-    # Generate and write content
     content = generate_m3u(tracks, m3u_path)
     m3u_path.write_text(content, encoding="utf-8")
 

@@ -67,6 +67,7 @@ class YTMusicClient:
         ytmusic: YTMusic | None = None,
         config: APIConfig | None = None,
         cookies_path: Path | None = None,
+        authuser: str = "0",
     ) -> None:
         """Initialize the client.
 
@@ -75,26 +76,29 @@ class YTMusicClient:
             config: Optional API configuration. Uses defaults if not provided.
             cookies_path: Optional path to cookies.txt for authentication.
                          If provided and valid, enables authenticated requests.
+            authuser: Google account index to use when cookies contain multiple
+                signed-in accounts ("0" = primary).
         """
         if ytmusic:
             self._ytm = ytmusic
         else:
-            self._ytm = self._create_ytmusic(cookies_path)
+            self._ytm = self._create_ytmusic(cookies_path, authuser)
         self._config = config or APIConfig()
         # LRU cache for albums with size limit
         self._album_cache: OrderedDict[str, Album] = OrderedDict()
 
-    def _create_ytmusic(self, cookies_path: Path | None) -> YTMusic:
+    def _create_ytmusic(self, cookies_path: Path | None, authuser: str) -> YTMusic:
         """Create YTMusic instance with optional authentication.
 
         Args:
             cookies_path: Optional path to cookies.txt file.
+            authuser: Google account index for the x-goog-authuser header.
 
         Returns:
             Configured YTMusic instance.
         """
         if cookies_path:
-            auth = cookies_to_ytmusic_auth(cookies_path)
+            auth = cookies_to_ytmusic_auth(cookies_path, authuser=authuser)
             if auth:
                 logger.info("Using cookies for ytmusicapi requests")
                 return YTMusic(auth=auth)
