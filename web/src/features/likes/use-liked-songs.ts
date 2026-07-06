@@ -1,5 +1,6 @@
 import {
   deleteSongFiles,
+  dismissChange,
   fetchLikedSongs,
   type LikedSong,
   redownloadSong,
@@ -7,6 +8,8 @@ import {
 } from "@/api/likes";
 import { showErrorToast, showSuccessToast } from "@/lib/toast";
 import { useCallback, useEffect, useMemo, useState } from "react";
+
+export type StatusFilter = "all" | "changed" | "new";
 
 function scoreMatch(song: LikedSong, query: string): number {
   const q = query.toLowerCase();
@@ -41,6 +44,7 @@ export function useLikedSongs() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
 
   const fetchSongs = useCallback(async () => {
     setIsLoading(true);
@@ -84,23 +88,63 @@ export function useLikedSongs() {
     }
   }, []);
 
-  const redownload = useCallback(async (videoId: string) => {
-    try {
-      await redownloadSong(videoId);
-      showSuccessToast("Likes", "Redownload job created");
-    } catch {
-      showErrorToast("Likes", "Failed to start redownload");
-    }
+  const markSyncedLocally = useCallback((videoId: string) => {
+    setSongs((prev) =>
+      prev.map((s) =>
+        s.video_id === videoId
+          ? { ...s, status: "synced" as const, synced_title: null }
+          : s,
+      ),
+    );
   }, []);
 
+  const redownload = useCallback(
+    async (videoId: string) => {
+      try {
+        await redownloadSong(videoId);
+        markSyncedLocally(videoId);
+        showSuccessToast("Likes", "Redownload job created");
+      } catch {
+        showErrorToast("Likes", "Failed to start redownload");
+      }
+    },
+    [markSyncedLocally],
+  );
+
+  const dismiss = useCallback(
+    async (videoId: string) => {
+      try {
+        await dismissChange(videoId);
+        markSyncedLocally(videoId);
+        showSuccessToast("Likes", "Change dismissed");
+      } catch {
+        showErrorToast("Likes", "Failed to dismiss change");
+      }
+    },
+    [markSyncedLocally],
+  );
+
+  const statusCounts = useMemo(() => {
+    const counts = { changed: 0, new: 0 };
+    for (const s of songs) {
+      if (s.status === "changed") counts.changed++;
+      else if (s.status === "new") counts.new++;
+    }
+    return counts;
+  }, [songs]);
+
   const filteredSongs = useMemo(() => {
-    if (!searchQuery.trim()) return songs;
-    return songs
+    const byStatus =
+      statusFilter === "all"
+        ? songs
+        : songs.filter((s) => s.status === statusFilter);
+    if (!searchQuery.trim()) return byStatus;
+    return byStatus
       .map((s) => ({ song: s, score: scoreMatch(s, searchQuery) }))
       .filter((x) => x.score > 0)
       .sort((a, b) => b.score - a.score)
       .map((x) => x.song);
-  }, [songs, searchQuery]);
+  }, [songs, searchQuery, statusFilter]);
 
   return {
     songs: filteredSongs,
@@ -109,9 +153,13 @@ export function useLikedSongs() {
     error,
     searchQuery,
     setSearchQuery,
+    statusFilter,
+    setStatusFilter,
+    statusCounts,
     fetchSongs,
     unlike,
     deleteFiles,
     redownload,
+    dismiss,
   };
 }

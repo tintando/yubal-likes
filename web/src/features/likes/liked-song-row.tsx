@@ -6,8 +6,9 @@ import {
   PopoverTrigger,
   Tooltip,
 } from "@heroui/react";
-import { HeartOffIcon, RefreshCwIcon, Trash2Icon } from "lucide-react";
+import { CheckIcon, HeartOffIcon, RefreshCwIcon, Trash2Icon } from "lucide-react";
 import { memo, useState } from "react";
+import { LikesStatusChip } from "./likes-status-chip";
 
 function formatDuration(seconds: number): string {
   const m = Math.floor(seconds / 60);
@@ -20,6 +21,7 @@ interface Props {
   onUnlike: (videoId: string) => Promise<void>;
   onDelete: (videoId: string) => Promise<void>;
   onRedownload: (videoId: string) => Promise<void>;
+  onDismiss: (videoId: string) => Promise<void>;
 }
 
 export const LikedSongRow = memo(function LikedSongRow({
@@ -27,6 +29,7 @@ export const LikedSongRow = memo(function LikedSongRow({
   onUnlike,
   onDelete,
   onRedownload,
+  onDismiss,
 }: Props) {
   const [loadingAction, setLoadingAction] = useState<string | null>(null);
 
@@ -63,9 +66,20 @@ export const LikedSongRow = memo(function LikedSongRow({
 
       {/* Info */}
       <div className="min-w-0 flex-1">
-        <p className="text-foreground truncate text-sm font-medium">
-          {song.title}
-        </p>
+        <div className="flex items-center gap-1.5">
+          <p className="text-foreground truncate text-sm font-medium">
+            {song.title}
+          </p>
+          {song.status === "changed" && song.synced_title ? (
+            <Tooltip content={`was: ${song.synced_title}`} closeDelay={0}>
+              <span className="shrink-0">
+                <LikesStatusChip status={song.status} />
+              </span>
+            </Tooltip>
+          ) : (
+            <LikesStatusChip status={song.status} />
+          )}
+        </div>
         <p className="text-foreground-500 truncate text-xs">
           {song.artists.join(", ")}
           {song.album && ` · ${song.album}`}
@@ -79,6 +93,20 @@ export const LikedSongRow = memo(function LikedSongRow({
 
       {/* Actions */}
       <div className="flex shrink-0 items-center gap-1">
+        {song.status === "changed" && (
+          <Tooltip content="Accept change (keep local files)">
+            <Button
+              isIconOnly
+              size="sm"
+              variant="light"
+              isLoading={loadingAction === "dismiss"}
+              onPress={() => handleAction("dismiss", onDismiss)}
+              aria-label="Dismiss change"
+            >
+              <CheckIcon className="h-4 w-4" />
+            </Button>
+          </Tooltip>
+        )}
         <Popover placement="top">
           <PopoverTrigger>
             <Button

@@ -14,6 +14,10 @@ class OrphanFile(BaseModel):
 
     path: str
     size: int
+    # Set when the orphan looks like it was replaced by a track added in
+    # the same sync (e.g. a like remapped to a re-released video_id).
+    replaced_by: str | None = None
+    match_score: float | None = None
 
 
 class ContentInfo(BaseModel):

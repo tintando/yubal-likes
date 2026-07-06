@@ -6,6 +6,7 @@ import { showErrorToast, showSuccessToast } from "@/lib/toast";
 import { Button, Tooltip } from "@heroui/react";
 import {
   AlertTriangleIcon,
+  ArrowRightIcon,
   CheckIcon,
   ShieldIcon,
   SkipForwardIcon,
@@ -30,6 +31,10 @@ type OrphanGroup = {
   paths: string[];
   /** Combined size of all files */
   totalSize: number;
+  /** Relative path of the track that likely replaced this orphan */
+  replacedBy: string | null;
+  /** Similarity score (0-100) of the replacement match */
+  matchScore: number | null;
 };
 
 function formatSize(bytes: number): string {
@@ -57,12 +62,25 @@ function groupOrphans(orphans: OrphanFile[]): OrphanGroup[] {
 
     let group = map.get(key);
     if (!group) {
-      group = { stem: key, name: stem, folder, extensions: [], paths: [], totalSize: 0 };
+      group = {
+        stem: key,
+        name: stem,
+        folder,
+        extensions: [],
+        paths: [],
+        totalSize: 0,
+        replacedBy: null,
+        matchScore: null,
+      };
       map.set(key, group);
     }
     group.extensions.push(ext);
     group.paths.push(o.path);
     group.totalSize += o.size;
+    if (group.replacedBy === null && o.replaced_by) {
+      group.replacedBy = o.replaced_by;
+      group.matchScore = o.match_score ?? null;
+    }
   }
 
   return Array.from(map.values());
@@ -92,6 +110,17 @@ function OrphanRow({
         </div>
         {group.folder && (
           <p className="text-foreground-400 text-tiny truncate">{group.folder}</p>
+        )}
+        {group.replacedBy && (
+          <Tooltip
+            content={`${group.replacedBy}${group.matchScore != null ? ` (${Math.round(group.matchScore)}% match)` : ""}`}
+            closeDelay={0}
+          >
+            <p className="text-warning text-tiny flex items-center gap-1 truncate">
+              <ArrowRightIcon className="h-3 w-3 shrink-0" />
+              replaced by {splitPath(group.replacedBy).stem}
+            </p>
+          </Tooltip>
         )}
       </div>
       <span className="text-foreground-500 text-tiny shrink-0 font-mono">
@@ -139,6 +168,11 @@ function OrphanRow({
   );
 }
 
+/** Suggested default: delete files that were likely replaced, keep the rest */
+function defaultAction(group: OrphanGroup): Action {
+  return group.replacedBy ? "delete" : "keep";
+}
+
 export function OrphanReview({ job }: { job: Job }) {
   const orphans = job.pending_orphans ?? [];
   const groups = useMemo(() => groupOrphans(orphans), [orphans]);
@@ -147,7 +181,7 @@ export function OrphanReview({ job }: { job: Job }) {
   const [decisions, setDecisions] = useState<Record<string, Action>>(() => {
     const initial: Record<string, Action> = {};
     for (const g of groups) {
-      initial[g.stem] = "delete";
+      initial[g.stem] = defaultAction(g);
     }
     return initial;
   });
@@ -157,11 +191,11 @@ export function OrphanReview({ job }: { job: Job }) {
     setDecisions((prev) => ({ ...prev, [stem]: action }));
   };
 
-  const setAllKeep = () => {
+  const setAll = (action: Action) => {
     setDecisions((prev) => {
       const next = { ...prev };
       for (const key of Object.keys(next)) {
-        next[key] = "keep";
+        next[key] = action;
       }
       return next;
     });
@@ -173,7 +207,7 @@ export function OrphanReview({ job }: { job: Job }) {
       // Expand group decisions back to individual file paths
       const items: { path: string; action: Action }[] = [];
       for (const group of groups) {
-        const action = decisions[group.stem] ?? "delete";
+        const action = decisions[group.stem] ?? defaultAction(group);
         for (const path of group.paths) {
           items.push({ path, action });
         }
@@ -194,7 +228,7 @@ export function OrphanReview({ job }: { job: Job }) {
   if (groups.length === 0) return null;
 
   const deleteCount = groups.filter(
-    (g) => (decisions[g.stem] ?? "delete") === "delete",
+    (g) => (decisions[g.stem] ?? defaultAction(g)) === "delete",
   ).length;
 
   return (
@@ -208,16 +242,27 @@ export function OrphanReview({ job }: { job: Job }) {
             <OrphanRow
               key={group.stem}
               group={group}
-              action={decisions[group.stem] ?? "delete"}
+              action={decisions[group.stem] ?? defaultAction(group)}
               onAction={(action) => setAction(group.stem, action)}
             />
           ))}
         </div>
       </PanelContent>
       <div className="flex items-center justify-between border-t px-4 py-3">
-        <Button variant="flat" size="sm" radius="lg" onPress={setAllKeep}>
-          Keep all
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button variant="flat" size="sm" radius="lg" onPress={() => setAll("keep")}>
+            Keep all
+          </Button>
+          <Button
+            variant="flat"
+            size="sm"
+            radius="lg"
+            color="danger"
+            onPress={() => setAll("delete")}
+          >
+            Delete all
+          </Button>
+        </div>
         <Button
           color="primary"
           size="sm"

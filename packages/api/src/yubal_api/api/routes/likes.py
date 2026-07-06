@@ -13,10 +13,13 @@ from yubal.models.ytmusic import Thumbnail
 from yubal_api.api.deps import (
     JobExecutorDep,
     LikesServiceDep,
+    LikesSnapshotRepositoryDep,
     SettingsDep,
 )
+from yubal_api.db.likes_snapshot_repository import LiveTrack
 from yubal_api.schemas.likes import (
     DeleteFilesResponse,
+    DismissChangeResponse,
     LikedSong,
     LikedSongsResponse,
     RedownloadResponse,
@@ -43,16 +46,32 @@ def _best_thumbnail(thumbnails: list[Thumbnail], size: int = 226) -> str | None:
 
 
 @router.get("")
-async def list_liked_songs(settings: SettingsDep) -> LikedSongsResponse:
+async def list_liked_songs(
+    settings: SettingsDep, snapshot_repo: LikesSnapshotRepositoryDep
+) -> LikedSongsResponse:
     """List all liked songs from YouTube Music."""
     client = _create_ytm_client(settings)
     playlist = await asyncio.to_thread(client.get_playlist, "LM")
+
+    statuses = await asyncio.to_thread(
+        snapshot_repo.sync_playlist,
+        [
+            LiveTrack(
+                video_id=track.video_id,
+                title=track.title,
+                artists=[a.name for a in track.artists],
+                duration_seconds=track.duration_seconds,
+            )
+            for track in playlist.tracks
+        ],
+    )
 
     items = []
     for track in playlist.tracks:
         yt_url = _best_thumbnail(track.thumbnails)
         if yt_url:
             _thumbnail_urls[track.video_id] = yt_url
+        status, synced_title = statuses.get(track.video_id, ("synced", None))
         items.append(
             LikedSong(
                 video_id=track.video_id,
@@ -65,6 +84,8 @@ async def list_liked_songs(settings: SettingsDep) -> LikedSongsResponse:
                     else None
                 ),
                 duration_seconds=track.duration_seconds,
+                status=status,
+                synced_title=synced_title,
             )
         )
 
@@ -129,6 +150,7 @@ async def redownload_song(
     video_id: str,
     likes_service: LikesServiceDep,
     job_executor: JobExecutorDep,
+    snapshot_repo: LikesSnapshotRepositoryDep,
 ) -> RedownloadResponse:
     """Redownload a song by deleting local and Drive files and creating a new sync job."""
     deleted, relative_paths = await asyncio.to_thread(
@@ -140,4 +162,18 @@ async def redownload_song(
     )
     if job is None:
         raise HTTPException(status_code=409, detail="Job queue is full")
+    # Baseline the snapshot now (at request time, not job completion) so
+    # the "changed" badge clears; a failed redownload is self-evident.
+    await asyncio.to_thread(snapshot_repo.mark_synced, video_id)
     return RedownloadResponse(job_id=job.id)
+
+
+@router.post("/{video_id}/dismiss-change")
+async def dismiss_change(
+    video_id: str, snapshot_repo: LikesSnapshotRepositoryDep
+) -> DismissChangeResponse:
+    """Accept the YT-side metadata change without redownloading."""
+    updated = await asyncio.to_thread(snapshot_repo.mark_synced, video_id)
+    if not updated:
+        raise HTTPException(status_code=404, detail="Unknown video_id")
+    return DismissChangeResponse()

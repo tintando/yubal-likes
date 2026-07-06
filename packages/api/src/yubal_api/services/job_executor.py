@@ -21,6 +21,7 @@ from yubal_api.domain.enums import JobSource, JobStatus, ProgressStep
 from yubal_api.domain.job import ContentInfo, Job, OrphanFile
 from yubal_api.services.cleanup_service import CleanupService
 from yubal_api.services.gdrive_service import GDriveService
+from yubal_api.services.orphan_matcher import annotate_replacements
 from yubal_api.services.protocols import JobExecutionStore
 from yubal_api.services.subscription_service import SubscriptionService
 from yubal_api.services.sync_service import SyncService
@@ -367,7 +368,7 @@ class JobExecutor:
             should_complete = True
             if result.success and not cancel_token.is_cancelled:
                 should_complete = await self._run_cleanup(
-                    job_id, cancel_token, result.content_info
+                    job_id, cancel_token, result.content_info, added_tracks
                 )
 
             # Transition to COMPLETED after cleanup (or if no cleanup needed)
@@ -622,6 +623,7 @@ class JobExecutor:
         job_id: str,
         cancel_token: CancelToken,
         content_info: ContentInfo | None,
+        added_tracks: list[tuple[str, str | None, str | None]] | None = None,
     ) -> bool:
         """Run orphan file scan after sync. Returns True if job should complete immediately."""
         self._job_store.transition(
@@ -640,6 +642,11 @@ class JobExecutor:
 
             keep_list = KeepList(self._base_path / ".yubal_keep.json")
             orphans = [o for o in orphans if not keep_list.contains(o.path)]
+
+        # Suggest deletions for orphans that match a freshly added track
+        # (likely a like remapped to a re-released video_id)
+        if orphans and added_tracks:
+            orphans = annotate_replacements(orphans, added_tracks)
 
         if orphans:
             self._job_store.transition(

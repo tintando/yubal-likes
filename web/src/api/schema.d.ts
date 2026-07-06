@@ -716,6 +716,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/likes/{video_id}/dismiss-change": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Dismiss Change
+         * @description Accept the YT-side metadata change without redownloading.
+         */
+        post: operations["dismiss_change_api_likes__video_id__dismiss_change_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -893,6 +913,14 @@ export interface components {
             /** Drive Files Deleted */
             drive_files_deleted: number;
         };
+        /** DismissChangeResponse */
+        DismissChangeResponse: {
+            /**
+             * Status
+             * @default ok
+             */
+            status: string;
+        };
         /**
          * DriveAuthUrlResponse
          * @description Drive OAuth2 authorization URL response.
@@ -1066,6 +1094,14 @@ export interface components {
             thumbnail_url?: string | null;
             /** Duration Seconds */
             duration_seconds: number;
+            /**
+             * Status
+             * @default synced
+             * @enum {string}
+             */
+            status: "new" | "changed" | "synced";
+            /** Synced Title */
+            synced_title?: string | null;
         };
         /** LikedSongsResponse */
         LikedSongsResponse: {
@@ -1287,6 +1323,16 @@ export interface components {
             path: string;
             /** Size */
             size: number;
+            /**
+             * Replaced By
+             * @default null
+             */
+            replaced_by: string | null;
+            /**
+             * Match Score
+             * @default null
+             */
+            match_score: number | null;
         };
         /**
          * PhaseStats
@@ -2806,6 +2852,37 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["RedownloadResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    dismiss_change_api_likes__video_id__dismiss_change_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                video_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DismissChangeResponse"];
                 };
             };
             /** @description Validation Error */

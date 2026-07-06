@@ -19,6 +19,7 @@ from fastapi import Depends
 from yubal_api.api.container import Services, get_services
 from yubal_api.db.history_repository import HistoryRepository
 from yubal_api.db.keep_list_repository import KeepListRepository
+from yubal_api.db.likes_snapshot_repository import LikesSnapshotRepository
 from yubal_api.services.gdrive_service import GDriveService
 from yubal_api.services.likes_service import LikesService
 from yubal_api.services.replaygain_scanner import ReplayGainScanner
@@ -128,6 +129,15 @@ def _get_keep_list_repository(services: ServicesDep) -> KeepListRepository:
 
 
 KeepListRepositoryDep = Annotated[KeepListRepository, Depends(_get_keep_list_repository)]
+
+
+def _get_likes_snapshot_repository(services: ServicesDep) -> LikesSnapshotRepository:
+    return services.likes_snapshot_repository
+
+
+LikesSnapshotRepositoryDep = Annotated[
+    LikesSnapshotRepository, Depends(_get_likes_snapshot_repository)
+]
 
 
 def _get_likes_service(

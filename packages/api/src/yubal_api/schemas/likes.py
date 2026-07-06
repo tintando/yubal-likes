@@ -1,5 +1,7 @@
 """Likes API schemas."""
 
+from typing import Literal
+
 from pydantic import BaseModel
 
 
@@ -10,6 +12,10 @@ class LikedSong(BaseModel):
     album: str | None = None
     thumbnail_url: str | None = None
     duration_seconds: int
+    # "new": first time we've seen this like; "changed": YT mutated
+    # title/artists since the last sync; "synced": no divergence.
+    status: Literal["new", "changed", "synced"] = "synced"
+    synced_title: str | None = None
 
 
 class LikedSongsResponse(BaseModel):
@@ -28,3 +34,7 @@ class DeleteFilesResponse(BaseModel):
 
 class RedownloadResponse(BaseModel):
     job_id: str
+
+
+class DismissChangeResponse(BaseModel):
+    status: str = "ok"

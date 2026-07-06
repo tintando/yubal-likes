@@ -43,3 +43,11 @@ export async function redownloadSong(videoId: string) {
   if (error) throw new Error(extractErrorMessage(error, "Failed to redownload song"));
   return data;
 }
+
+export async function dismissChange(videoId: string) {
+  const { data, error } = await api.POST("/api/likes/{video_id}/dismiss-change", {
+    params: { path: { video_id: videoId } },
+  });
+  if (error) throw new Error(extractErrorMessage(error, "Failed to dismiss change"));
+  return data;
+}

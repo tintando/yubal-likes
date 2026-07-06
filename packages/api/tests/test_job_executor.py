@@ -5,9 +5,9 @@ from typing import Any
 from uuid import UUID
 
 import pytest
-from yubal import AudioCodec
+from yubal import AudioCodec, CancelToken
 from yubal_api.domain.enums import JobSource, JobStatus
-from yubal_api.domain.job import Job
+from yubal_api.domain.job import Job, OrphanFile
 from yubal_api.services.job_executor import JobExecutor
 from yubal_api.services.sync_service import SyncResult, SyncService
 
@@ -17,6 +17,7 @@ class FakeJobStore:
 
     def __init__(self) -> None:
         self.transitions: list[tuple[str, JobStatus]] = []
+        self.transition_kwargs: list[dict[str, Any]] = []
         self.released: list[str] = []
         self._pending: list[Job] = []
 
@@ -33,6 +34,7 @@ class FakeJobStore:
 
     def transition(self, job_id: str, status: JobStatus, **kwargs: Any) -> Job:
         self.transitions.append((job_id, status))
+        self.transition_kwargs.append(kwargs)
         return Job(id=job_id, url="", audio_format=AudioCodec.OPUS, status=status)
 
     def pop_next_pending(self) -> Job | None:
@@ -180,3 +182,67 @@ class TestExecutorAudioQuality:
         await executor._run_job("test-job", "https://example.com")
 
         assert captured_quality == [0]
+
+
+@pytest.mark.enable_socket
+class TestRunCleanupReplacements:
+    """Tests for replacement annotation during orphan cleanup."""
+
+    @pytest.fixture
+    def store(self) -> FakeJobStore:
+        return FakeJobStore()
+
+    @pytest.fixture
+    def executor(self, store: FakeJobStore, tmp_path: Any) -> JobExecutor:
+        return JobExecutor(job_store=store, base_path=tmp_path)
+
+    @pytest.mark.asyncio
+    async def test_orphans_annotated_with_replacements(
+        self,
+        executor: JobExecutor,
+        store: FakeJobStore,
+        monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        """Orphans matching an added track carry replaced_by into the store."""
+        orphans = [
+            OrphanFile(path="Artist/Album/01 - Song Title.opus", size=100),
+            OrphanFile(path="Other/Album/05 - Unrelated Thing.opus", size=100),
+        ]
+        monkeypatch.setattr(
+            "yubal_api.services.job_executor.CleanupService.find_orphans",
+            lambda self: orphans,
+        )
+
+        added = [("New/Album/01 - Song Title.opus", "Song Title", "Artist")]
+        should_complete = await executor._run_cleanup(
+            "test-job", CancelToken(), None, added
+        )
+
+        assert should_complete is False
+        assert store.transitions[-1] == ("test-job", JobStatus.AWAITING_REVIEW)
+        pending = store.transition_kwargs[-1]["pending_orphans"]
+        assert pending[0].replaced_by == added[0][0]
+        assert pending[0].match_score is not None
+        assert pending[1].replaced_by is None
+
+    @pytest.mark.asyncio
+    async def test_no_added_tracks_leaves_orphans_bare(
+        self,
+        executor: JobExecutor,
+        store: FakeJobStore,
+        monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        """Without added tracks, orphans are passed through unannotated."""
+        orphans = [OrphanFile(path="Artist/Album/01 - Song Title.opus", size=100)]
+        monkeypatch.setattr(
+            "yubal_api.services.job_executor.CleanupService.find_orphans",
+            lambda self: orphans,
+        )
+
+        should_complete = await executor._run_cleanup(
+            "test-job", CancelToken(), None, None
+        )
+
+        assert should_complete is False
+        pending = store.transition_kwargs[-1]["pending_orphans"]
+        assert pending[0].replaced_by is None

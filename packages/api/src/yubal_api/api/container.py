@@ -11,6 +11,7 @@ from fastapi import Request
 
 from yubal_api.db.history_repository import HistoryRepository
 from yubal_api.db.keep_list_repository import KeepListRepository
+from yubal_api.db.likes_snapshot_repository import LikesSnapshotRepository
 from yubal_api.services.gdrive_service import GDriveService
 from yubal_api.services.job_event_bus import JobEventBus
 from yubal_api.services.job_executor import JobExecutor
@@ -43,6 +44,7 @@ class Services:
     replaygain_scanner: ReplayGainScanner
     history_repository: HistoryRepository
     keep_list_repository: KeepListRepository
+    likes_snapshot_repository: LikesSnapshotRepository
 
     def close(self) -> None:
         """Clean up resources. Called at application shutdown."""

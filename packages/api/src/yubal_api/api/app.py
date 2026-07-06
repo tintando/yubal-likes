@@ -45,6 +45,7 @@ from yubal_api.api.routes import (
 from yubal_api.db import (
     HistoryRepository,
     KeepListRepository,
+    LikesSnapshotRepository,
     SubscriptionRepository,
     create_db_engine,
 )
@@ -139,6 +140,7 @@ def create_services(
     repository: SubscriptionRepository,
     history_repository: HistoryRepository,
     keep_list_repository: KeepListRepository,
+    likes_snapshot_repository: LikesSnapshotRepository,
 ) -> Services:
     """Create all application services with proper dependency wiring.
 
@@ -233,6 +235,7 @@ def create_services(
         replaygain_scanner=replaygain_scanner,
         history_repository=history_repository,
         keep_list_repository=keep_list_repository,
+        likes_snapshot_repository=likes_snapshot_repository,
     )
 
 
@@ -272,7 +275,13 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     repository = SubscriptionRepository(engine)
     history_repository = HistoryRepository(engine)
     keep_list_repository = KeepListRepository(engine)
-    services = create_services(repository, history_repository, keep_list_repository)
+    likes_snapshot_repository = LikesSnapshotRepository(engine)
+    services = create_services(
+        repository,
+        history_repository,
+        keep_list_repository,
+        likes_snapshot_repository,
+    )
     app.state.services = services
     logger.info("Services initialized")
 
