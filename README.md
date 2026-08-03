@@ -214,7 +214,9 @@ Need age-restricted content, private playlists, or Premium quality? Add your coo
 > [!CAUTION]
 > Cookie usage may trigger stricter rate limiting and could put your account at risk. See [#3](https://github.com/guillevc/yubal/issues/3) and [yt-dlp wiki](https://github.com/yt-dlp/yt-dlp/wiki/Extractors#youtube).
 
-## 🗺️ What's Coming
+## 🗺️ Upstream Roadmap
+
+Shipped upstream and inherited here; the open items are upstream's plans, not commitments of this fork.
 
 - [x] Playlist support with M3U generation ([v0.2.0](https://github.com/guillevc/yubal/releases/tag/v0.2.0))
 - [x] Single track downloads ([v0.3.0](https://github.com/guillevc/yubal/releases/tag/v0.3.0))
@@ -232,11 +234,7 @@ If yubal is useful to you, consider supporting its original author:
 
 [![ko-fi](https://ko-fi.com/img/githubbutton_sm.svg)](https://ko-fi.com/guillevc) [![Sponsor](https://img.shields.io/badge/sponsor-GitHub-ea4aaa?logo=github)](https://github.com/sponsors/guillevc)
 
-A ⭐ also helps others discover yubal!
-
-## 📈 Star History
-
-[![Star History Chart](https://api.star-history.com/svg?repos=guillevc/yubal&type=Date)](https://star-history.com/#guillevc/yubal&Date)
+A ⭐ on [the original repository](https://github.com/guillevc/yubal) also helps others discover yubal!
 
 ## 🙏 Acknowledgments
 
