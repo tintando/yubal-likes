@@ -25,7 +25,7 @@ None of the following exists upstream:
 - **Google Drive backup** — an off-site copy kept in sync, with incremental re-upload, duplicate cleanup, and manual retry
 - **Likes manager** — browse liked songs, detect YouTube-side metadata changes and like-replacements, redownload
 - **Library search & cleanup** — search local files, find files no playlist references, delete with cascading `.lrc`, M3U, and Drive cleanup
-- **Orphan review** — post-sync cleanup with a keep-list and a review step that pairs orphans with their replacements
+- **Orphan review** — post-sync cleanup with a keep-list and a review step that pairs orphans with their replacements; confirmed deletions are mirrored to Drive right away
 - **Import** — adopt an existing music folder into the managed library
 - **Sync history** — a persistent record of past syncs and per-track add/remove events
 - **Multi-account cookies** — pick which Google account a single `cookies.txt` acts as
@@ -85,7 +85,7 @@ When downloading a playlist, each track goes to its album folder—the M3U file 
 - **Google Drive backup** — Off-site copy kept in sync, with incremental re-upload and duplicate cleanup
 - **Likes manager** — Browse liked songs, spot YouTube-side metadata changes and replacements, redownload
 - **Library search & cleanup** — Search local files, find unreferenced ones, delete with cascading `.lrc`/M3U/Drive cleanup
-- **Orphan review** — Confirm what a sync removes, with a keep-list and orphan/replacement pairing
+- **Orphan review** — Confirm what a sync removes, with a keep-list and orphan/replacement pairing; deletions propagate to Drive
 - **Import** — Adopt an existing music folder into the managed library
 - **Sync history** — Persistent record of past syncs and per-track add/remove events
 - **Multi-account cookies** — Pick which Google account a single `cookies.txt` acts as
