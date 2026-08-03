@@ -110,26 +110,14 @@ More info in the extension's [README.md](https://github.com/guillevc/yubal/blob/
 
 ## 🚀 Quick Start
 
-> [!IMPORTANT]
-> The published `ghcr.io/guillevc/yubal` image is upstream's and contains none of the additions listed above. To run this fork, build it from this repository — clone it and use the bundled [`compose.yaml`](compose.yaml), which builds locally rather than pulling. The compose file below is upstream's quick start, kept for reference.
+Build from source. The published `ghcr.io/guillevc/yubal` image is upstream's and contains none of the additions listed above; the bundled [`compose.yaml`](compose.yaml) builds locally rather than pulling.
 
-```yaml
-# compose.yaml
-services:
-  yubal:
-    image: ghcr.io/guillevc/yubal:latest
-    container_name: yubal
-    user: 1000:1000
-    ports:
-      - 8000:8000
-    environment:
-      YUBAL_SCHEDULER_CRON: "0 0 * * *"
-      YUBAL_DOWNLOAD_UGC: false
-      YUBAL_TZ: UTC
-    volumes:
-      - ./data:/app/data
-      - ./config:/app/config
-    restart: unless-stopped
+```bash
+git clone https://github.com/tintando/yubal.git
+cd yubal
+cp .env.example .env   # compose expects the file to exist; every setting is optional
+docker compose up -d --build
+# Open http://localhost:8000
 ```
 
 > [!TIP]
@@ -138,12 +126,7 @@ services:
 > - Change `user:` to match your UID:GID (run `id` to check), or
 > - Set ownership on the volume directories: `chown 1000:1000 -R data config`
 
-```bash
-docker compose up -d
-# Open http://localhost:8000
-```
-
-> **Unraid?** Use the [community Docker template](https://github.com/SerpentDrago/UnraidDockerTemplates/tree/main/yubal) by [@SerpentDrago](https://github.com/SerpentDrago) ([unraid forum thread](https://forums.unraid.net/topic/197157-support-yubal-self-hosted-youtube-music-downloader/)).
+> **Unraid?** Use the [community Docker template](https://github.com/SerpentDrago/UnraidDockerTemplates/tree/main/yubal) by [@SerpentDrago](https://github.com/SerpentDrago) ([unraid forum thread](https://forums.unraid.net/topic/197157-support-yubal-self-hosted-youtube-music-downloader/)) — note that it deploys upstream's image, not this fork.
 
 ## ⚙️ Configuration
 
