@@ -2,16 +2,11 @@
 
 # yubal
 
-Self-hosted YouTube Music downloader. Paste a link, get a tagged, organized library.
+A fork of [guillevc/yubal](https://github.com/guillevc/yubal) by Guillermo Alfonso Varela Chouciño — the original and canonical project.
 
-Playlist sync. Artist/year sorting. Duplicate detection. Media server ready.
+Self-hosted YouTube Music library manager. Download, organize, and then keep on top of a music library over time.
 
-[![CI](https://github.com/guillevc/yubal/actions/workflows/ci.yaml/badge.svg)](https://github.com/guillevc/yubal/actions/workflows/ci.yaml)
-[![Release](https://img.shields.io/github/v/release/guillevc/yubal)](https://github.com/guillevc/yubal/releases)
-[![Firefox Add-on](https://img.shields.io/amo/v/yubal?label=firefox%20add-on&logo=firefox&logoColor=white&color=orange)](https://addons.mozilla.org/firefox/addon/yubal/)
-[![Chrome Extension](https://img.shields.io/github/v/release/guillevc/yubal?filter=ext-v*&label=chrome%20extension&logo=googlechrome&logoColor=white&color=orange)](https://github.com/guillevc/yubal/releases?q=🧩)
-[![Docker](https://img.shields.io/badge/ghcr.io-blue?logo=docker&logoColor=white)](https://ghcr.io/guillevc/yubal)
-[![codecov](https://codecov.io/gh/guillevc/yubal/branch/master/graph/badge.svg)](https://codecov.io/gh/guillevc/yubal)
+Playlist sync. Artist/year sorting. Off-site backup. Orphan review. Media server ready.
 
 <picture>
   <img src="docs/demo.gif" alt="yubal demo" width="75%">
@@ -20,6 +15,23 @@ Playlist sync. Artist/year sorting. Duplicate detection. Media server ready.
 </div>
 
 <br/>
+
+## 🔀 How this fork differs
+
+Upstream yubal is a downloader: paste a link, get a tagged, organized library. This fork keeps that core intact and adds the layer that comes _after_ the download — owning and operating the library over time.
+
+None of the following exists upstream:
+
+- **Google Drive backup** — an off-site copy kept in sync, with incremental re-upload, duplicate cleanup, and manual retry
+- **Likes manager** — browse liked songs, detect YouTube-side metadata changes and like-replacements, redownload
+- **Library search & cleanup** — search local files, find files no playlist references, delete with cascading `.lrc`, M3U, and Drive cleanup
+- **Orphan review** — post-sync cleanup with a keep-list and a review step that pairs orphans with their replacements
+- **Import** — adopt an existing music folder into the managed library
+- **Sync history** — a persistent record of past syncs and per-track add/remove events
+- **Multi-account cookies** — pick which Google account a single `cookies.txt` acts as
+- **Standalone ReplayGain scan** — an on-demand whole-library scan with cancel (upstream tags only at download time)
+
+Upstream's [`CONTRIBUTING.md`](https://github.com/guillevc/yubal/blob/master/CONTRIBUTING.md) asks that large feature PRs not be sent its way, so these changes live here rather than being proposed upstream. For the original project — and for anything that is not on the list above — go to [guillevc/yubal](https://github.com/guillevc/yubal).
 
 ## 📖 How It Works
 
@@ -68,8 +80,15 @@ When downloading a playlist, each track goes to its album folder—the M3U file 
 - **Smart deduplication** — Same track across 10 playlists? Stored once, referenced everywhere
 - **Reliable downloads** — Automatic retry on failures, graceful cancellation
 - **Automatic lyrics** — Synced `.lrc` files downloaded alongside tracks when available
-- **ReplayGain tagging** — Track and album ReplayGain/R128 tags for consistent playback volume
+- **ReplayGain tagging** — Track and album ReplayGain/R128 tags, at download time or as a standalone whole-library scan
 - **Format options** — Native `opus` (best quality), mp3, or m4a (direct download when available, transcoded otherwise)
+- **Google Drive backup** — Off-site copy kept in sync, with incremental re-upload and duplicate cleanup
+- **Likes manager** — Browse liked songs, spot YouTube-side metadata changes and replacements, redownload
+- **Library search & cleanup** — Search local files, find unreferenced ones, delete with cascading `.lrc`/M3U/Drive cleanup
+- **Orphan review** — Confirm what a sync removes, with a keep-list and orphan/replacement pairing
+- **Import** — Adopt an existing music folder into the managed library
+- **Sync history** — Persistent record of past syncs and per-track add/remove events
+- **Multi-account cookies** — Pick which Google account a single `cookies.txt` acts as
 - **Media server ready** — Tested with [Navidrome, Jellyfin, and Gonic](#-media-server-integration)
 - **[CLI](packages/yubal/src/yubal/cli/README.md)** — Download and inspect metadata from the terminal
 
@@ -90,6 +109,9 @@ Download tracks and subscribe to playlists directly from YouTube and YouTube Mus
 More info in the extension's [README.md](https://github.com/guillevc/yubal/blob/master/extension/README.md).
 
 ## 🚀 Quick Start
+
+> [!IMPORTANT]
+> The published `ghcr.io/guillevc/yubal` image is upstream's and contains none of the additions listed above. To run this fork, build it from this repository — clone it and use the bundled [`compose.yaml`](compose.yaml), which builds locally rather than pulling. The compose file below is upstream's quick start, kept for reference.
 
 ```yaml
 # compose.yaml
@@ -223,7 +245,7 @@ Need age-restricted content, private playlists, or Premium quality? Add your coo
 
 ## 💜 Support
 
-If yubal is useful to you, consider supporting its development:
+If yubal is useful to you, consider supporting its original author:
 
 [![ko-fi](https://ko-fi.com/img/githubbutton_sm.svg)](https://ko-fi.com/guillevc) [![Sponsor](https://img.shields.io/badge/sponsor-GitHub-ea4aaa?logo=github)](https://github.com/sponsors/guillevc)
 
@@ -234,6 +256,8 @@ A ⭐ also helps others discover yubal!
 [![Star History Chart](https://api.star-history.com/svg?repos=guillevc/yubal&type=Date)](https://star-history.com/#guillevc/yubal&Date)
 
 ## 🙏 Acknowledgments
+
+Above all, thanks to [Guillermo Alfonso Varela Chouciño](https://github.com/guillevc) for [yubal](https://github.com/guillevc/yubal). Everything here is built on that project; this fork only adds a layer on top of work that was already whole 💜
 
 Built with [yt-dlp](https://github.com/yt-dlp/yt-dlp) and [ytmusicapi](https://github.com/sigma67/ytmusicapi).
 
