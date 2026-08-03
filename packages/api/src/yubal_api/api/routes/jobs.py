@@ -151,7 +151,7 @@ async def resolve_orphans(
         raise JobConflictError("Job is not awaiting review", job_id=job_id)
 
     decisions = [{"path": d.path, "action": d.action} for d in request.decisions]
-    success = job_executor.resolve_orphans(job_id, decisions)
+    success = await asyncio.to_thread(job_executor.resolve_orphans, job_id, decisions)
     if not success:
         raise JobConflictError("Failed to resolve orphans", job_id=job_id)
 

@@ -20,6 +20,10 @@ class FakeJobStore:
         self.transition_kwargs: list[dict[str, Any]] = []
         self.released: list[str] = []
         self._pending: list[Job] = []
+        self.job: Job | None = None
+
+    def get(self, job_id: str) -> Job | None:
+        return self.job
 
     def create(
         self,
@@ -246,3 +250,133 @@ class TestRunCleanupReplacements:
         assert should_complete is False
         pending = store.transition_kwargs[-1]["pending_orphans"]
         assert pending[0].replaced_by is None
+
+
+class FakeGDrive:
+    """Records delete_file_by_path calls; optionally reports missing or raises."""
+
+    def __init__(self, *, found: bool = True, error: Exception | None = None) -> None:
+        self.calls: list[str] = []
+        self._found = found
+        self._error = error
+
+    def delete_file_by_path(self, relative_path: str) -> bool:
+        self.calls.append(relative_path)
+        if self._error is not None:
+            raise self._error
+        return self._found
+
+
+class TestResolveOrphans:
+    """Tests for orphan review resolution, including Drive mirroring."""
+
+    SONG = "Artist/Album/01 - Song Title.opus"
+    LYRICS = "Artist/Album/01 - Song Title.lrc"
+
+    @pytest.fixture
+    def store(self) -> FakeJobStore:
+        store = FakeJobStore()
+        store.job = Job(
+            id="test-job",
+            url="",
+            audio_format=AudioCodec.OPUS,
+            status=JobStatus.AWAITING_REVIEW,
+        )
+        return store
+
+    @pytest.fixture
+    def executor(self, store: FakeJobStore, tmp_path: Any) -> JobExecutor:
+        for rel in (self.SONG, self.LYRICS):
+            target = tmp_path / rel
+            target.parent.mkdir(parents=True, exist_ok=True)
+            target.write_bytes(b"audio")
+        return JobExecutor(job_store=store, base_path=tmp_path)
+
+    @staticmethod
+    def _delete_decisions() -> list[dict[str, str]]:
+        return [
+            {"path": TestResolveOrphans.SONG, "action": "delete"},
+            {"path": TestResolveOrphans.LYRICS, "action": "delete"},
+        ]
+
+    def test_deletes_locally_when_drive_disabled(
+        self, executor: JobExecutor, store: FakeJobStore, tmp_path: Any
+    ) -> None:
+        """Without Drive configured, local deletion and completion still happen."""
+        assert executor._gdrive_service is None
+
+        assert executor.resolve_orphans("test-job", self._delete_decisions()) is True
+
+        assert not (tmp_path / self.SONG).exists()
+        assert not (tmp_path / self.LYRICS).exists()
+        assert store.transitions[-1] == ("test-job", JobStatus.COMPLETED)
+
+    def test_deletes_from_drive_with_relative_paths(
+        self, executor: JobExecutor, store: FakeJobStore, tmp_path: Any
+    ) -> None:
+        """Each deleted file is removed from Drive by its library-relative path."""
+        fake = FakeGDrive()
+        executor._gdrive_service = fake  # type: ignore[assignment]
+
+        assert executor.resolve_orphans("test-job", self._delete_decisions()) is True
+
+        assert fake.calls == [self.SONG, self.LYRICS]
+        assert not (tmp_path / self.SONG).exists()
+        assert store.transitions[-1] == ("test-job", JobStatus.COMPLETED)
+
+    def test_missing_on_drive_is_not_an_error(
+        self, executor: JobExecutor, store: FakeJobStore
+    ) -> None:
+        """A file absent from Drive is a normal outcome, not a failure."""
+        fake = FakeGDrive(found=False)
+        executor._gdrive_service = fake  # type: ignore[assignment]
+
+        assert executor.resolve_orphans("test-job", self._delete_decisions()) is True
+
+        assert fake.calls == [self.SONG, self.LYRICS]
+        assert store.transitions[-1] == ("test-job", JobStatus.COMPLETED)
+
+    def test_drive_failure_does_not_block_completion(
+        self, executor: JobExecutor, store: FakeJobStore, tmp_path: Any
+    ) -> None:
+        """A raising Drive call is logged; remaining files and the job proceed."""
+        fake = FakeGDrive(error=RuntimeError("drive unavailable"))
+        executor._gdrive_service = fake  # type: ignore[assignment]
+
+        assert executor.resolve_orphans("test-job", self._delete_decisions()) is True
+
+        assert fake.calls == [self.SONG, self.LYRICS]
+        assert not (tmp_path / self.SONG).exists()
+        assert not (tmp_path / self.LYRICS).exists()
+        assert store.transitions[-1] == ("test-job", JobStatus.COMPLETED)
+
+    def test_drive_untouched_without_delete_decisions(
+        self, executor: JobExecutor, store: FakeJobStore, tmp_path: Any
+    ) -> None:
+        """Kept orphans reach neither the local unlink nor Drive."""
+        fake = FakeGDrive()
+        executor._gdrive_service = fake  # type: ignore[assignment]
+
+        decisions = [
+            {"path": self.SONG, "action": "keep"},
+            {"path": self.LYRICS, "action": "never_delete"},
+        ]
+        assert executor.resolve_orphans("test-job", decisions) is True
+
+        assert fake.calls == []
+        assert (tmp_path / self.SONG).exists()
+        assert store.transitions[-1] == ("test-job", JobStatus.COMPLETED)
+
+    def test_wrong_status_resolves_nothing(
+        self, executor: JobExecutor, store: FakeJobStore, tmp_path: Any
+    ) -> None:
+        """A job that is not awaiting review is left entirely alone."""
+        assert store.job is not None
+        store.job.status = JobStatus.COMPLETED
+        fake = FakeGDrive()
+        executor._gdrive_service = fake  # type: ignore[assignment]
+
+        assert executor.resolve_orphans("test-job", self._delete_decisions()) is False
+
+        assert fake.calls == []
+        assert (tmp_path / self.SONG).exists()

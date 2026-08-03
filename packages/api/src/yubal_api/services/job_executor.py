@@ -707,6 +707,29 @@ class JobExecutor:
                 result.bytes_freed,
             )
 
+            # Mirror the deletion to Drive right away, rather than leaving it to
+            # the next sync's upload phase. Read the attribute at call time: it
+            # is cleared at runtime when Drive credentials are deleted. Failures
+            # are logged and swallowed so a Drive outage cannot keep the job
+            # from completing; the next sync still cleans up what is left.
+            gdrive = self._gdrive_service
+            if gdrive:
+                drive_deleted = 0
+                for p in to_delete:
+                    rel = str(p.relative_to(self._base_path))
+                    try:
+                        if gdrive.delete_file_by_path(rel):
+                            drive_deleted += 1
+                            logger.info("Deleted from Drive: %s", rel)
+                    except Exception:
+                        logger.warning(
+                            "Failed to delete from Drive: %s", rel, exc_info=True
+                        )
+                logger.info(
+                    "Orphan review cleanup: %d files deleted from Drive",
+                    drive_deleted,
+                )
+
         # Record orphan events and update sync history
         sync_id = self._current_sync_ids.pop(job_id, None)
         if self._history_repository:
