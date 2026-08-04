@@ -18,16 +18,20 @@ Playlist sync. Artist/year sorting. Off-site backup. Orphan review. Media server
 
 ## How this fork differs
 
-Upstream yubal is a downloader: paste a link, get a tagged, organized library. This fork keeps that core intact and adds the layer that comes _after_ the download: owning and operating the library over time.
+Upstream yubal is a downloader: paste any link, get a tagged, organized library. This fork keeps that core intact and points it at one playlist, `LM`, YouTube Music's Liked Music list. Everything added here exists to make that single list, rather than a collection of links you assembled by hand, the thing the library _is_.
+
+One playlist sounds like less work than many. It is more, because this is the one playlist you do not fully control. It changes on YouTube's side while you are not looking: a track is re-uploaded under a new video id and the old one dies, an artist gets renamed, a song is pulled from the region. So the fork keeps a snapshot of what each liked song looked like the last time it was downloaded and diffs it against what YouTube reports now. That diff is what separates a song you unliked from a song YouTube replaced underneath you, and only one of those should cost you the file.
+
+Being finite and knowable is the other half. A single list is small enough to hold entirely, so it is worth mirroring off-site in full, and small enough to prune exactly, so a file nothing references any more can be found and removed rather than left to accumulate.
 
 None of the following exists upstream:
 
-- **Google Drive backup**: an off-site copy kept in sync, with incremental re-upload, duplicate cleanup, and manual retry
 - **Likes manager**: browse liked songs, detect YouTube-side metadata changes and like-replacements, redownload
-- **Library search & cleanup**: search local files, find files no playlist references, delete with cascading `.lrc`, M3U, and Drive cleanup
 - **Orphan review**: post-sync cleanup with a keep-list and a review step that pairs orphans with their replacements; confirmed deletions are mirrored to Drive right away
-- **Import**: adopt an existing music folder into the managed library
+- **Google Drive backup**: an off-site copy kept in sync, with incremental re-upload, duplicate cleanup, and manual retry
+- **Library search & cleanup**: search local files, find files no playlist references, delete with cascading `.lrc`, M3U, and Drive cleanup
 - **Sync history**: a persistent record of past syncs and per-track add/remove events
+- **Import**: adopt an existing music folder into the managed library
 - **Multi-account cookies**: pick which Google account a single `cookies.txt` acts as
 - **Standalone ReplayGain scan**: an on-demand whole-library scan with cancel (upstream tags only at download time)
 
