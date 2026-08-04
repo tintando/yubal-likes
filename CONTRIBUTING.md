@@ -4,11 +4,11 @@ Thanks for your interest in this fork of yubal! This document explains how you c
 
 ## Which project are you contributing to?
 
-This repository is a fork of [guillevc/yubal](https://github.com/guillevc/yubal). If your bug or idea concerns the core downloader and is reproducible upstream, it belongs there — see [upstream's CONTRIBUTING](https://github.com/guillevc/yubal/blob/master/CONTRIBUTING.md). Issues and PRs here should be about the features this fork adds, listed under "How this fork differs" in the [README](README.md).
+This repository is a fork of [guillevc/yubal](https://github.com/guillevc/yubal). If your bug or idea concerns the core downloader and is reproducible upstream, it belongs there; see [upstream's CONTRIBUTING](https://github.com/guillevc/yubal/blob/master/CONTRIBUTING.md). Issues and PRs here should be about the features this fork adds, listed under "How this fork differs" in the [README](README.md).
 
 ## Project Status
 
-This fork is developed in spare time and tracks upstream loosely. Large feature PRs are unlikely to be merged quickly — they tend to create merge conflicts and review overhead that slow things down.
+This fork is developed in spare time and tracks upstream loosely. Large feature PRs are unlikely to be merged quickly, because they tend to create merge conflicts and review overhead that slow things down.
 
 ## How to Contribute
 
