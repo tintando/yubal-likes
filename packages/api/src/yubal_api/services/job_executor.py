@@ -114,7 +114,7 @@ class JobExecutor:
         """Read the active Google account index, freshly each call.
 
         Reading on demand lets the user switch accounts without restarting
-        the executor — the next job picks up the new selection.
+        the executor; the next job picks up the new selection.
         """
         try:
             return self._authuser_provider()

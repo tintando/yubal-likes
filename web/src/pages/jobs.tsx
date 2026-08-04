@@ -187,7 +187,7 @@ function Dashboard({ jobs, schedulerStatus, lastSync }: {
       <SubscriptionCard>
         <SubscriptionCard.Header title="Tracks">
           <SubscriptionCard.Value>
-            <span className="font-mono">{trackCount ?? "—"}</span>
+            <span className="font-mono">{trackCount ?? "–"}</span>
           </SubscriptionCard.Value>
         </SubscriptionCard.Header>
         <SubscriptionCard.Icon className="text-primary bg-primary/10">

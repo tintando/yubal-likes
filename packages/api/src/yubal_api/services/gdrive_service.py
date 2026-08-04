@@ -394,7 +394,7 @@ class GDriveService:
                     fid = f["id"]
                     existing_size = self._files_cache[parent].get(name)
                     if existing_size is not None:
-                        # Duplicate detected — keep the larger one
+                        # Duplicate detected: keep the larger one
                         if size >= existing_size:
                             self._duplicate_ids.append(self._file_ids[parent][name])
                             self._files_cache[parent][name] = size

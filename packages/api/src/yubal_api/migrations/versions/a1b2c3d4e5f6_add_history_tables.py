@@ -71,7 +71,7 @@ def upgrade() -> None:
 
 def _migrate_keep_list_json() -> None:
     """Read .yubal_keep.json and insert entries into keep_list table."""
-    # Try common data paths — the settings aren't available here,
+    # Try common data paths, because the settings aren't available here,
     # so we check the env variable directly.
     import os
 

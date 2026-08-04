@@ -66,7 +66,7 @@ const LibraryFileRow = memo(function LibraryFileRow({
           )}
           {!file.in_playlist && (
             <Tooltip
-              content="No playlist references this file — it will show up as an orphan"
+              content="No playlist references this file, so it will show up as an orphan"
               closeDelay={0}
             >
               <Chip

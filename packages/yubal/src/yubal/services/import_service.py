@@ -114,7 +114,7 @@ class FileImportService:
 
             # Search YTM
             query = f"{artist} {title}"
-            logger.info("Importing '%s' — searching: %s", path.name, query)
+            logger.info("Importing '%s', searching: %s", path.name, query)
 
             try:
                 search_results = self._client.search_songs(query)

@@ -90,7 +90,7 @@ export function useCookies(): UseCookiesReturn {
         setIsPickerOpen(true);
         const result = await loadAccounts();
         if (result && result.accounts.length <= 1) {
-          // Only one account — no point in showing the picker.
+          // Only one account, so there is no point in showing the picker.
           setIsPickerOpen(false);
         }
       } catch {

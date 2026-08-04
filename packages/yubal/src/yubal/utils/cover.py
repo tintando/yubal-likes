@@ -145,7 +145,7 @@ def crop_to_square(data: bytes) -> bytes:
     img = PILImage.open(BytesIO(data))
     w, h = img.size
 
-    # Already square (±1px tolerance) — return original
+    # Already square (±1px tolerance): return original
     if abs(w - h) <= 1:
         return data
 

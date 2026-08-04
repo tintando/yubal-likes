@@ -30,7 +30,7 @@ class TestExtractionCacheUnmatched:
             with patch("yubal.services.cache.time") as mock_time:
                 mock_time.time.return_value = time.time() + 86401
                 assert cache.is_unmatched("vid1") is False
-                # Row should be deleted — re-check without mock
+                # Row should be deleted, so re-check without mock
             assert cache.is_unmatched("vid1") is False
 
     def test_no_cross_contamination_with_matched_cache(self, tmp_path):

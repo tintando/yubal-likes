@@ -68,7 +68,7 @@ async def upload_cookies(
     await asyncio.to_thread(ytdlp_dir.mkdir, parents=True, exist_ok=True)
     await asyncio.to_thread(cookies_file.write_text, body.content)
 
-    # Reset selected account on new upload — old index may not match new cookies.
+    # Reset selected account on new upload; the old index may not match new cookies.
     await asyncio.to_thread(settings.authuser_file.unlink, missing_ok=True)
 
     return CookiesUploadResponse(status="ok")

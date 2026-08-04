@@ -57,7 +57,7 @@ export function AccountPickerModal({
             </div>
           ) : accounts.length === 0 ? (
             <p className="text-default-500 py-4 text-sm">
-              No accounts responded. Your cookies may be invalid or expired —
+              No accounts responded. Your cookies may be invalid or expired, so
               try re-exporting from a tab that's signed into YouTube Music.
             </p>
           ) : (
