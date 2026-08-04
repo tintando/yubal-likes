@@ -2,7 +2,7 @@
 
 # yubal
 
-A fork of [guillevc/yubal](https://github.com/guillevc/yubal) by Guillermo Alfonso Varela Chouciño — the original and canonical project.
+A fork of [guillevc/yubal](https://github.com/guillevc/yubal) by Guillermo Alfonso Varela Chouciño, the original and canonical project.
 
 Self-hosted YouTube Music library manager. Download, organize, and then keep on top of a music library over time.
 
@@ -16,24 +16,26 @@ Playlist sync. Artist/year sorting. Off-site backup. Orphan review. Media server
 
 <br/>
 
-## 🔀 How this fork differs
+## How this fork differs
 
-Upstream yubal is a downloader: paste a link, get a tagged, organized library. This fork keeps that core intact and adds the layer that comes _after_ the download — owning and operating the library over time.
+Upstream yubal is a downloader: paste a link, get a tagged, organized library. This fork keeps that core intact and adds the layer that comes _after_ the download: owning and operating the library over time.
 
 None of the following exists upstream:
 
-- **Google Drive backup** — an off-site copy kept in sync, with incremental re-upload, duplicate cleanup, and manual retry
-- **Likes manager** — browse liked songs, detect YouTube-side metadata changes and like-replacements, redownload
-- **Library search & cleanup** — search local files, find files no playlist references, delete with cascading `.lrc`, M3U, and Drive cleanup
-- **Orphan review** — post-sync cleanup with a keep-list and a review step that pairs orphans with their replacements; confirmed deletions are mirrored to Drive right away
-- **Import** — adopt an existing music folder into the managed library
-- **Sync history** — a persistent record of past syncs and per-track add/remove events
-- **Multi-account cookies** — pick which Google account a single `cookies.txt` acts as
-- **Standalone ReplayGain scan** — an on-demand whole-library scan with cancel (upstream tags only at download time)
+- **Google Drive backup**: an off-site copy kept in sync, with incremental re-upload, duplicate cleanup, and manual retry
+- **Likes manager**: browse liked songs, detect YouTube-side metadata changes and like-replacements, redownload
+- **Library search & cleanup**: search local files, find files no playlist references, delete with cascading `.lrc`, M3U, and Drive cleanup
+- **Orphan review**: post-sync cleanup with a keep-list and a review step that pairs orphans with their replacements; confirmed deletions are mirrored to Drive right away
+- **Import**: adopt an existing music folder into the managed library
+- **Sync history**: a persistent record of past syncs and per-track add/remove events
+- **Multi-account cookies**: pick which Google account a single `cookies.txt` acts as
+- **Standalone ReplayGain scan**: an on-demand whole-library scan with cancel (upstream tags only at download time)
 
-Upstream's [`CONTRIBUTING.md`](https://github.com/guillevc/yubal/blob/master/CONTRIBUTING.md) asks that large feature PRs not be sent its way, so these changes live here rather than being proposed upstream. For the original project — and for anything that is not on the list above — go to [guillevc/yubal](https://github.com/guillevc/yubal).
+Upstream's [`CONTRIBUTING.md`](https://github.com/guillevc/yubal/blob/master/CONTRIBUTING.md) asks that large feature PRs not be sent its way, so these changes live here rather than being proposed upstream. For the original project, and for anything that is not on the list above, go to [guillevc/yubal](https://github.com/guillevc/yubal).
 
-## 📖 How It Works
+## How It Works
+
+<!-- HEADLINE: one-line claim about the hardest problem this project solves. Deferred; the owner writes this. -->
 
 Downloading music is easy. _Organizing_ it is the hard part.
 
@@ -62,7 +64,7 @@ data/
     └── My Favorites [n2g-XhDv].jpg
 ```
 
-When downloading a playlist, each track goes to its album folder—the M3U file just references them:
+When downloading a playlist, each track goes to its album folder. The M3U file only references them:
 
 ```m3u
 #EXTM3U
@@ -72,34 +74,34 @@ When downloading a playlist, each track goes to its album folder—the M3U file 
 ../Radiohead/1997 - OK Computer/02 - Paranoid Android.opus
 ```
 
-## ✨ Features
+## Features
 
-- **Web UI** — Real-time progress, job queue, responsive design
-- **Albums, playlists & tracks** — Paste any YouTube Music link, get organized files
-- **Scheduled sync** — Subscribe to playlists; new tracks download automatically
-- **Smart deduplication** — Same track across 10 playlists? Stored once, referenced everywhere
-- **Reliable downloads** — Automatic retry on failures, graceful cancellation
-- **Automatic lyrics** — Synced `.lrc` files downloaded alongside tracks when available
-- **ReplayGain tagging** — Track and album ReplayGain/R128 tags, at download time or as a standalone whole-library scan
-- **Format options** — Native `opus` (best quality), mp3, or m4a (direct download when available, transcoded otherwise)
-- **Google Drive backup** — Off-site copy kept in sync, with incremental re-upload and duplicate cleanup
-- **Likes manager** — Browse liked songs, spot YouTube-side metadata changes and replacements, redownload
-- **Library search & cleanup** — Search local files, find unreferenced ones, delete with cascading `.lrc`/M3U/Drive cleanup
-- **Orphan review** — Confirm what a sync removes, with a keep-list and orphan/replacement pairing; deletions propagate to Drive
-- **Import** — Adopt an existing music folder into the managed library
-- **Sync history** — Persistent record of past syncs and per-track add/remove events
-- **Multi-account cookies** — Pick which Google account a single `cookies.txt` acts as
-- **Media server ready** — Tested with [Navidrome, Jellyfin, and Gonic](#-media-server-integration)
-- **[CLI](packages/yubal/src/yubal/cli/README.md)** — Download and inspect metadata from the terminal
+- **Web UI**: real-time progress, job queue, responsive design
+- **Albums, playlists & tracks**: paste any YouTube Music link, get organized files
+- **Scheduled sync**: subscribe to playlists; new tracks download automatically
+- **Smart deduplication**: same track across 10 playlists? Stored once, referenced everywhere
+- **Reliable downloads**: automatic retry on failures, graceful cancellation
+- **Automatic lyrics**: synced `.lrc` files downloaded alongside tracks when available
+- **ReplayGain tagging**: track and album ReplayGain/R128 tags, at download time or as a standalone whole-library scan
+- **Format options**: native `opus` (best quality), mp3, or m4a (direct download when available, transcoded otherwise)
+- **Google Drive backup**: off-site copy kept in sync, with incremental re-upload and duplicate cleanup
+- **Likes manager**: browse liked songs, spot YouTube-side metadata changes and replacements, redownload
+- **Library search & cleanup**: search local files, find unreferenced ones, delete with cascading `.lrc`/M3U/Drive cleanup
+- **Orphan review**: confirm what a sync removes, with a keep-list and orphan/replacement pairing; deletions propagate to Drive
+- **Import**: adopt an existing music folder into the managed library
+- **Sync history**: persistent record of past syncs and per-track add/remove events
+- **Multi-account cookies**: pick which Google account a single `cookies.txt` acts as
+- **Media server ready**: tested with [Navidrome, Jellyfin, and Gonic](#media-server-integration)
+- **[CLI](packages/yubal/src/yubal/cli/README.md)**: download and inspect metadata from the terminal
 
-## 🧩 Browser Extension
+## Browser Extension
 
 Download tracks and subscribe to playlists directly from YouTube and YouTube Music without leaving the page.
 
 <p>
-  <img src="https://raw.githubusercontent.com/guillevc/yubal/refs/heads/master/extension/docs/images/extension-track.png" alt="Track view" width="32%">
-  <img src="https://raw.githubusercontent.com/guillevc/yubal/refs/heads/master/extension/docs/images/extension-playlist.png" alt="Playlist view" width="32%">
-  <img src="https://raw.githubusercontent.com/guillevc/yubal/refs/heads/master/extension/docs/images/extension-settings.png" alt="Settings view" width="32%">
+  <img src="extension/docs/images/extension-track.png" alt="Track view" width="32%">
+  <img src="extension/docs/images/extension-playlist.png" alt="Playlist view" width="32%">
+  <img src="extension/docs/images/extension-settings.png" alt="Settings view" width="32%">
 </p>
 <p>
   <a href="https://addons.mozilla.org/addon/yubal/"><img src="https://img.shields.io/badge/Firefox-get_add--on-FF7139?logo=firefox&logoColor=white&style=for-the-badge" alt="Get the add-on for Firefox"></a>
@@ -108,7 +110,7 @@ Download tracks and subscribe to playlists directly from YouTube and YouTube Mus
 
 More info in the extension's [README.md](https://github.com/guillevc/yubal/blob/master/extension/README.md).
 
-## 🚀 Quick Start
+## Quick Start
 
 Build from source. The published `ghcr.io/guillevc/yubal` image is upstream's and contains none of the additions listed above; the bundled [`compose.yaml`](compose.yaml) builds locally rather than pulling.
 
@@ -126,9 +128,9 @@ docker compose up -d --build
 > - Change `user:` to match your UID:GID (run `id` to check), or
 > - Set ownership on the volume directories: `chown 1000:1000 -R data config`
 
-> **Unraid?** Use the [community Docker template](https://github.com/SerpentDrago/UnraidDockerTemplates/tree/main/yubal) by [@SerpentDrago](https://github.com/SerpentDrago) ([unraid forum thread](https://forums.unraid.net/topic/197157-support-yubal-self-hosted-youtube-music-downloader/)) — note that it deploys upstream's image, not this fork.
+> **Unraid?** Use the [community Docker template](https://github.com/SerpentDrago/UnraidDockerTemplates/tree/main/yubal) by [@SerpentDrago](https://github.com/SerpentDrago) ([unraid forum thread](https://forums.unraid.net/topic/197157-support-yubal-self-hosted-youtube-music-downloader/)). Note that it deploys upstream's image, not this fork.
 
-## ⚙️ Configuration
+## Configuration
 
 | Variable                    | Description                                       | Default (Docker) |
 | --------------------------- | ------------------------------------------------- | ---------------- |
@@ -158,7 +160,7 @@ docker compose up -d --build
 
 </details>
 
-## 🔌 Media Server Integration
+## Media Server Integration
 
 Tested with Navidrome, Jellyfin, and Gonic. Artists link correctly, even on tracks with multiple artists.
 
@@ -204,7 +206,7 @@ M3U playlists are not supported ([pending PR](https://github.com/sentriz/gonic/p
 
 </details>
 
-## 🍪 Cookies (Optional)
+## Cookies (Optional)
 
 Need age-restricted content, private playlists, or Premium quality? Add your cookies:
 
@@ -214,7 +216,15 @@ Need age-restricted content, private playlists, or Premium quality? Add your coo
 > [!CAUTION]
 > Cookie usage may trigger stricter rate limiting and could put your account at risk. See [#3](https://github.com/guillevc/yubal/issues/3) and [yt-dlp wiki](https://github.com/yt-dlp/yt-dlp/wiki/Extractors#youtube).
 
-## 🗺️ Upstream Roadmap
+## Scope and known gaps
+
+- **No authentication**: there is no login anywhere in the API, the bundled `compose.yaml` publishes port 8000 straight onto the host, and CORS defaults to `["*"]`. Anything past a trusted network wants a reverse proxy in front of it.
+- **One source**: YouTube Music, through yt-dlp and ytmusicapi. There is no Spotify, Bandcamp, or local-file ingest path beyond the one-off import.
+- **One backup target**: Google Drive, using OAuth2 client secrets you register yourself. No S3, no rclone, no WebDAV.
+- **One job at a time**: downloads and syncs are serialized through a single active slot, so a large playlist blocks everything queued behind it. All state lives in one SQLite file at `config/yubal/yubal.db`, and two instances pointed at the same volume is not a case this handles.
+- **Source builds only**: the `ghcr.io` image and the add-on store listings belong to upstream and do not carry this fork's additions, so there is no prebuilt path here yet.
+
+## Upstream Roadmap
 
 Shipped upstream and inherited here; the open items are upstream's plans, not commitments of this fork.
 
@@ -228,7 +238,7 @@ Shipped upstream and inherited here; the open items are upstream's plans, not co
 - [ ] Post-download webhooks
 - [ ] New music automatic discovery
 
-## 💜 Support
+## Support
 
 If yubal is useful to you, consider supporting its original author:
 
@@ -236,7 +246,7 @@ If yubal is useful to you, consider supporting its original author:
 
 A ⭐ on [the original repository](https://github.com/guillevc/yubal) also helps others discover yubal!
 
-## 🙏 Acknowledgments
+## Acknowledgments
 
 Above all, thanks to [Guillermo Alfonso Varela Chouciño](https://github.com/guillevc) for [yubal](https://github.com/guillevc/yubal). Everything here is built on that project; this fork only adds a layer on top of work that was already whole 💜
 
