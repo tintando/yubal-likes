@@ -37,9 +37,21 @@ None of the following exists upstream:
 
 Upstream's [`CONTRIBUTING.md`](https://github.com/guillevc/yubal/blob/master/CONTRIBUTING.md) asks that large feature PRs not be sent its way, so these changes live here rather than being proposed upstream. For the original project, and for anything that is not on the list above, go to [guillevc/yubal](https://github.com/guillevc/yubal).
 
-## How It Works
+The two that carry the most weight, in the UI:
 
-<!-- HEADLINE: one-line claim about the hardest problem this project solves. Deferred; the owner writes this. -->
+### Orphan review
+
+A sync never deletes on its own. Files the playlist stopped referencing are parked here first, grouped so a track and its `.lrc` move together, and each group is paired with whatever most likely replaced it. Only the matched ones default to deletion; everything else defaults to keeping. "Never delete" writes the file to a permanent keep-list so later syncs stop asking about it, and confirmed deletions are removed from Drive in the same step instead of waiting for the next upload pass.
+
+<img src="docs/orphan-review.png" alt="Orphan review panel listing unreferenced files, two of them marked as replaced by a newer upload, with per-file delete, keep and never-delete actions" width="100%">
+
+### Google Drive backup
+
+The library is mirrored to a Drive folder after every sync, re-uploading only what changed and pruning remote duplicates as it goes. The header icon carries the connection state, blue once authorized and amber while credentials are still waiting on consent, and its menu covers what the automatic pass cannot: re-uploading files a failed sync missed, rotating client secrets, and disconnecting.
+
+<img src="docs/drive-integration.png" alt="yubal header with the Drive menu open, highlighted in red, showing upload library now, re-authorize, upload new client secrets and disconnect" width="100%">
+
+## How It Works
 
 Downloading music is easy. _Organizing_ it is the hard part.
 
