@@ -47,7 +47,7 @@ export function Footer() {
           </a>
           {" · "}
           <a
-            href={`https://github.com/tintando/yubal/${__IS_RELEASE__ ? `releases/tag/${__VERSION__}` : `commit/${__COMMIT_SHA__}`}`}
+            href={`https://github.com/tintando/yubal-likes/${__IS_RELEASE__ ? `releases/tag/${__VERSION__}` : `commit/${__COMMIT_SHA__}`}`}
             target="_blank"
             rel="noopener noreferrer"
             className="hover:text-foreground hover:underline"

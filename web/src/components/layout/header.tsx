@@ -161,7 +161,7 @@ export function Header() {
             as="a"
             disableAnimation
             size="sm"
-            href="https://github.com/tintando/yubal"
+            href="https://github.com/tintando/yubal-likes"
             target="_blank"
             rel="noopener noreferrer"
             variant="light"
@@ -274,7 +274,7 @@ export function Header() {
         )}
         <NavbarMenuItem>
           <HeroUILink
-            href="https://github.com/tintando/yubal"
+            href="https://github.com/tintando/yubal-likes"
             isExternal
             showAnchorIcon
             color="foreground"

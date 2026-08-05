@@ -168,7 +168,7 @@ export function SubscriptionsPage() {
               <a
                 target="_blank"
                 rel="noopener noreferrer"
-                href="https://github.com/tintando/yubal?tab=readme-ov-file#%EF%B8%8F-configuration"
+                href="https://github.com/tintando/yubal-likes?tab=readme-ov-file#%EF%B8%8F-configuration"
               >
                 <CircleQuestionMarkIcon size={20} className="mr-2" />
               </a>

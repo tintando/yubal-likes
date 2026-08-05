@@ -16,7 +16,7 @@ This fork is developed in spare time and tracks upstream loosely. Large feature 
 
 Before reporting a bug:
 
-1. Check [existing issues](https://github.com/tintando/yubal/issues) to avoid duplicates
+1. Check [existing issues](https://github.com/tintando/yubal-likes/issues) to avoid duplicates
 2. Use the latest version to see if the issue has been fixed
 
 When reporting, please include:
@@ -26,15 +26,15 @@ When reporting, please include:
 - Expected vs actual behavior
 - Relevant logs or screenshots
 
-[Open a bug report](https://github.com/tintando/yubal/issues/new)
+[Open a bug report](https://github.com/tintando/yubal-likes/issues/new)
 
 ### Suggesting Features
 
-Feature ideas are welcome! Please [open an issue](https://github.com/tintando/yubal/issues/new) to share your idea.
+Feature ideas are welcome! Please [open an issue](https://github.com/tintando/yubal-likes/issues/new) to share your idea.
 
 ### Questions & Support
 
-For questions or troubleshooting, [open an issue](https://github.com/tintando/yubal/issues/new).
+For questions or troubleshooting, [open an issue](https://github.com/tintando/yubal-likes/issues/new).
 
 ### Pull Requests
 

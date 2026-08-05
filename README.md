@@ -131,8 +131,8 @@ More info in the extension's [README.md](https://github.com/guillevc/yubal/blob/
 Build from source. The published `ghcr.io/guillevc/yubal` image is upstream's and contains none of the additions listed above; the bundled [`compose.yaml`](compose.yaml) builds locally rather than pulling.
 
 ```bash
-git clone https://github.com/tintando/yubal.git
-cd yubal
+git clone https://github.com/tintando/yubal-likes.git
+cd yubal-likes
 cp .env.example .env   # compose expects the file to exist; every setting is optional
 docker compose up -d --build
 # Open http://localhost:8000
