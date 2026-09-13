@@ -8,9 +8,7 @@ Self-hosted YouTube Music library manager. Download, organize, and then keep on 
 
 Playlist sync. Artist/year sorting. Off-site backup. Orphan review. Media server ready.
 
-<picture>
-  <img src="docs/demo.gif" alt="yubal demo" width="75%">
-</picture>
+<img src="docs/media/home.png" alt="The Sync page: Sync Now, Import and ReplayGain actions, last-synced, track-count and next-sync cards, and the recent syncs list with per-sync track deltas, under a header carrying the Likes and Library tabs and the Drive and cookie icons" width="75%">
 
 </div>
 
@@ -43,17 +41,23 @@ The two that carry the most weight, in the UI:
 
 A sync never deletes on its own. Files the playlist stopped referencing are parked here first, grouped so a track and its `.lrc` move together, and each group is paired with whatever most likely replaced it. Only the matched ones default to deletion; everything else defaults to keeping. "Never delete" writes the file to a permanent keep-list so later syncs stop asking about it, and confirmed deletions are removed from Drive in the same step instead of waiting for the next upload pass.
 
-<img src="docs/orphan-review.png" alt="Orphan review panel listing unreferenced files, two of them marked as replaced by a newer upload, with per-file delete, keep and never-delete actions" width="100%">
+<img src="docs/media/orphan-review.png" alt="Orphan review panel listing unreferenced files, two of them marked as replaced by a newer upload, with per-file delete, keep and never-delete actions" width="100%">
 
 ### Google Drive backup
 
 The library is mirrored to a Drive folder after every sync, re-uploading only what changed and pruning remote duplicates as it goes. The header icon carries the connection state, blue once authorized and amber while credentials are still waiting on consent, and its menu covers what the automatic pass cannot: re-uploading files a failed sync missed, rotating client secrets, and disconnecting.
 
-<img src="docs/drive-integration.png" alt="yubal header with the Drive menu open, highlighted in red, showing upload library now, re-authorize, upload new client secrets and disconnect" width="100%">
+<img src="docs/media/drive-menu.png" alt="The Drive menu open under the header icon: upload library now, re-authorize, upload new client secrets and disconnect">
 
 ## How It Works
 
 Downloading music is easy. _Organizing_ it is the hard part.
+
+Upstream's own demo shows that core loop, from a pasted link to a finished download:
+
+<div align="center">
+  <img src="docs/demo.gif" alt="yubal demo" width="75%">
+</div>
 
 yubal takes a YouTube Music URL and produces a clean, tagged music library:
 
@@ -228,6 +232,9 @@ Need age-restricted content, private playlists, or Premium quality? Add your coo
 
 1. Export `https://www.youtube.com/` cookies with a browser extension ([yt-dlp guide](https://github.com/yt-dlp/yt-dlp/wiki/FAQ#how-do-i-pass-cookies-to-yt-dlp))
 2. Place at `config/ytdlp/cookies.txt` or upload via the web UI
+3. If that browser was signed in to more than one Google account, pick the one yubal should act as under **Switch account** in the cookie icon's menu. The export carries every signed-in account's session, so yubal probes them and lists the ones that answer; the choice is stored as the `x-goog-authuser` index in `config/ytdlp/authuser.txt`.
+
+<img src="docs/media/cookie-menu.png" alt="The cookie menu open under the header icon: switch account, upload new cookies and delete cookies">
 
 > [!CAUTION]
 > Cookie usage may trigger stricter rate limiting and could put your account at risk. See [#3](https://github.com/guillevc/yubal/issues/3) and [yt-dlp wiki](https://github.com/yt-dlp/yt-dlp/wiki/Extractors#youtube).
